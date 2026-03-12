@@ -8,7 +8,7 @@
     <!-- Polices Senzala -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +18,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Firebase SDK (Compat Version for standalone HTML) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -26,148 +26,154 @@
     <style>
         html, body, #root {
             min-height: 100vh;
-            background-color: #FFFDF9;
-            color: #1f2937;
+            background-color: #f1f5f9; 
+            color: #0f172a;
             font-family: 'Manrope', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
         
         .font-display { font-family: 'Oswald', sans-serif; }
-        .brand-gradient { background: linear-gradient(135deg, #FCB13D 0%, #F7784A 100%); }
-        .brand-shadow { box-shadow: 0 20px 40px -15px rgba(247, 120, 74, 0.3); }
-        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(159, 81, 42, 0.2); }
         
-        .veneer-title {
-            text-transform: uppercase;
-            letter-spacing: -0.02em;
-            line-height: 0.9;
-        }
-
+        /* Thème Bleu Premium */
+        .brand-gradient { background: linear-gradient(135deg, #1d4ed8 0%, #0f172a 100%); }
+        .brand-shadow { box-shadow: 0 20px 40px -15px rgba(29, 78, 216, 0.4); }
+        
+        /* Effet de survol */
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
+        
+        .veneer-title { text-transform: uppercase; letter-spacing: -0.01em; line-height: 0.95; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .animate-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .text-brand-yellow { color: #FCB13D; }
-        .text-brand-coral { color: #F7784A; }
-        .text-brand-brown { color: #9F512A; }
-        .text-brand-purple { color: #5E4FDE; }
+        input[type="range"] { accent-color: #3b82f6; }
+        
+        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
 
-        .bg-brand-yellow { background-color: #FCB13D; }
-        .bg-brand-coral { background-color: #F7784A; }
+        /* --- STYLES D'IMPRESSION (PDF) --- */
+        @media print {
+            .no-print { display: none !important; }
+            body, #root, html { background-color: white !important; height: auto !important; min-height: auto !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            .break-inside-avoid { page-break-inside: avoid; break-inside: avoid; }
+            .page-break { page-break-after: always; }
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        // Extraire les hooks React
         const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-        // --- COMPOSANT ICONES (Remplacement de lucide-react) ---
+        // --- COMPOSANT ICONES ---
         const Icon = ({ name, size = 24, className = "" }) => {
             const icons = {
                 Play: <polygon points="5 3 19 12 5 21 5 3"></polygon>,
                 Pause: <><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></>,
                 Trash2: <><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></>,
                 Save: <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></>,
-                Settings2: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>,
-                ChevronDown: <polyline points="6 9 12 15 18 9"></polyline>,
-                Menu: <><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></>,
+                Settings2: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>,
                 Disc: <><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></>,
-                RefreshCw: <><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>,
-                FilePlus: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></>,
+                Plus: <><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></>,
                 Search: <><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></>,
                 ArrowLeft: <><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></>,
-                Plus: <><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></>,
                 Edit3: <><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></>,
-                Share2: <><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></>,
-                Info: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></>,
                 Music: <><path d="M9 18V5l12-2v13M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path></>,
-                Copy: <><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>
+                Copy: <><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>,
+                AlertCircle: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></>,
+                Volume2: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></>,
+                VolumeX: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></>,
+                Info: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></>,
+                Check: <polyline points="20 6 9 17 4 12"></polyline>,
+                Printer: <><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></>
             };
             return (
-                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
                     {icons[name]}
                 </svg>
             );
         };
 
-        // --- CONFIGURATION FIREBASE PERSONNELLE ---
+        // --- CONFIGURATION FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyAaEf6I-5iiYDuw-s_tJJ-35PEoejRr4P8",
             authDomain: "cercles-rythmiques.firebaseapp.com",
             projectId: "cercles-rythmiques",
             storageBucket: "cercles-rythmiques.firebasestorage.app",
             messagingSenderId: "29649922619",
-            appId: "1:29649922619:web:599ee14f924095c2038a1e",
-            measurementId: "G-V4MN6VLMQ1"
+            appId: "1:29649922619:web:599ee14f924095c2038a1e"
         };
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const auth = firebase.auth();
         const db = firebase.firestore();
-
-        // Nom de la collection dans votre base de données Firestore
         const DB_COLLECTION = "rhythms_catalogue";
 
-        // --- DATA ---
+        // --- PALETTE DE COULEURS ---
         const SOUND_LIBRARY = {
-            'pandeiro-grave': { name: 'Pandeiro Grave', color: '#be123c' },
-            'pandeiro-slap': { name: 'Pandeiro Slap', color: '#fb7185' },
-            'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#e2e8f0' },
-            'quinto-open': { name: 'Quinto Open', color: '#fdba74' },
-            'quinto-blem': { name: 'Quinto Blem', color: '#c2410c' },
-            'quinto-slap': { name: 'Quinto Slap', color: '#fef3c7' },
-            'conga-open': { name: 'Conga Open', color: '#ea580c' },
-            'conga-blem': { name: 'Conga Blem', color: '#7c2d12' },
-            'conga-slap': { name: 'Conga Slap', color: '#fcd34d' },
-            'agogo-low': { name: 'Agogo Grave', color: '#0e7490' },
-            'agogo-high': { name: 'Agogo Aigu', color: '#22d3ee' },
-            'cowbell': { name: 'Cowbell', color: '#a1a1aa' },
-            'shaker': { name: 'Shaker', color: '#a3a3a3' },
-            'kick': { name: 'Kick Electro', color: '#6366f1' },
-            'snare': { name: 'Snare Electro', color: '#f43f5e' },
-            'hihat': { name: 'Hi-Hat', color: '#10b981' }
+            'pandeiro-grave': { name: 'Pandeiro Grave', color: '#7e22ce' }, 
+            'pandeiro-slap': { name: 'Pandeiro Slap', color: '#d946ef' }, 
+            'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#f472b6' }, 
+            'quinto-open': { name: 'Quinto Open', color: '#ea580c' }, 
+            'quinto-blem': { name: 'Quinto Blem', color: '#c2410c' }, 
+            'quinto-slap': { name: 'Quinto Slap', color: '#fb923c' }, 
+            'conga-open': { name: 'Conga Open', color: '#dc2626' }, 
+            'conga-blem': { name: 'Conga Blem', color: '#991b1b' }, 
+            'conga-slap': { name: 'Conga Slap', color: '#f87171' }, 
+            'agogo-low': { name: 'Agogo Grave', color: '#ca8a04' }, 
+            'agogo-high': { name: 'Agogo Aigu', color: '#facc15' }, 
+            'cowbell': { name: 'Cowbell', color: '#fcd34d' }, 
+            'shaker': { name: 'Shaker', color: '#10b981' }, 
+            'kick': { name: 'Kick Electro', color: '#0ea5e9' }, 
+            'snare': { name: 'Snare Electro', color: '#06b6d4' }, 
+            'hihat': { name: 'Hi-Hat', color: '#2dd4bf' } 
         };
-
-        const RHYTHM_FAMILIES = ["Samba", "Capoeira", "Maculelê", "Candomblé", "Forró", "Maracatu", "Afro-Brésilien", "Electro", "Autre"];
 
         // --- MOTEUR AUDIO ---
         const AudioEngine = {
-            ctx: null,
+            ctx: null, masterGain: null,
             init: () => {
-                if (!AudioEngine.ctx) AudioEngine.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!AudioEngine.ctx) {
+                    AudioEngine.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    AudioEngine.masterGain = AudioEngine.ctx.createGain();
+                    AudioEngine.masterGain.connect(AudioEngine.ctx.destination);
+                }
                 if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
             },
             createNoiseBuffer: () => {
                 if (!AudioEngine.ctx) return null;
-                const bufferSize = AudioEngine.ctx.sampleRate * 2.0; 
-                const buffer = AudioEngine.ctx.createBuffer(1, bufferSize, AudioEngine.ctx.sampleRate);
+                const buffer = AudioEngine.ctx.createBuffer(1, AudioEngine.ctx.sampleRate * 2.0, AudioEngine.ctx.sampleRate);
                 const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
                 return buffer;
             },
-            playTone: (type, time) => {
+            playTone: (type, time, vol = 1, isAccent = false) => {
                 if (!AudioEngine.ctx) return;
                 const ctx = AudioEngine.ctx;
                 const now = time || ctx.currentTime;
+                const finalVol = isAccent ? vol * 1.6 : vol * 0.8;
+                
+                const gainNode = ctx.createGain();
+                gainNode.gain.setValueAtTime(finalVol, now);
+                gainNode.connect(AudioEngine.masterGain);
 
-                const createOsc = (waveType, freq, start, duration, vol=1) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
+                const createOsc = (waveType, freq, start, duration, v=1) => {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
                     osc.type = waveType; osc.frequency.setValueAtTime(freq, start);
-                    gain.gain.setValueAtTime(vol, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-                    osc.connect(gain); gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(v, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+                    osc.connect(gain); gain.connect(gainNode);
                     osc.start(start); osc.stop(start + duration);
                 };
-
-                const createNoise = (filterType, filterFreq, duration, vol=1) => {
+                
+                const createNoise = (filterType, filterFreq, duration, v=1) => {
                     const node = ctx.createBufferSource(); node.buffer = AudioEngine.createNoiseBuffer();
                     const gain = ctx.createGain(); const filter = ctx.createBiquadFilter();
                     filter.type = filterType; filter.frequency.value = filterFreq;
-                    node.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-                    gain.gain.setValueAtTime(vol, now); gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    node.connect(filter); filter.connect(gain); gain.connect(gainNode);
+                    gain.gain.setValueAtTime(v, now); gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
                     node.start(now); node.stop(now + duration);
                 };
 
@@ -175,12 +181,24 @@
                     case 'pandeiro-grave': createOsc('sine', 90, now, 0.4, 0.8); break;
                     case 'pandeiro-slap': createOsc('square', 400, now, 0.05, 0.3); createNoise('highpass', 3000, 0.08, 0.5); break;
                     case 'pandeiro-jingle': createNoise('highpass', 3000, 0.15, 0.4); createOsc('square', 6000, now, 0.05, 0.1); break;
+                    
+                    // --- AMÉLIORATION DES SLAPS ICI ---
+                    case 'quinto-slap': 
+                        createOsc('sine', 750, now, 0.04, 0.7); 
+                        createOsc('triangle', 1200, now, 0.03, 0.4); // Résonance boisée
+                        createNoise('bandpass', 4500, 0.05, 0.8); // Claquement franc aigu
+                        break;
+                    case 'conga-slap': 
+                        createOsc('sine', 550, now, 0.05, 0.7); // Plus grave que le quinto
+                        createOsc('triangle', 900, now, 0.03, 0.4); // Résonance boisée
+                        createNoise('bandpass', 3500, 0.06, 0.8); // Claquement franc
+                        break;
+                        
                     case 'quinto-open': createOsc('sine', 260, now, 0.35, 0.7); createOsc('sine', 520, now, 0.08, 0.15); break;
                     case 'quinto-blem': createOsc('sine', 280, now, 0.08, 0.7); break;
-                    case 'quinto-slap': createOsc('sine', 700, now, 0.04, 0.6); createNoise('highpass', 2500, 0.04, 0.5); break;
                     case 'conga-open': createOsc('sine', 220, now, 0.4, 0.6); break;
                     case 'conga-blem': createOsc('sine', 220, now, 0.1, 0.6); break;
-                    case 'conga-slap': createOsc('sine', 500, now, 0.05, 0.5); createNoise('highpass', 2000, 0.05, 0.4); break;
+                    
                     case 'agogo-low': createOsc('triangle', 440, now, 0.4, 0.5); break;
                     case 'agogo-high': createOsc('triangle', 587, now, 0.4, 0.5); break;
                     case 'shaker': createNoise('bandpass', 4000, 0.08, 0.2); break;
@@ -193,71 +211,48 @@
         };
 
         const DEFAULT_TRACKS = [
-            { id: 'pandeiro-grave', steps: new Set([0, 8]) },
-            { id: 'conga-open', steps: new Set([4, 12]) },
-            { id: 'shaker', steps: new Set([2, 6, 10, 14]) }
+            { id: 'pandeiro-grave', steps: new Set([0, 8]), volume: 1, muted: false },
+            { id: 'conga-open', steps: new Set([4, 12]), volume: 1, muted: false },
+            { id: 'shaker', steps: new Set([2, 6, 10, 14]), volume: 0.5, muted: false }
         ];
-
-        const INITIAL_FORM = {
-            title: '', family: '', origin: '', instruments: '', note: ''
-        };
 
         function App() {
             const [user, setUser] = useState(null);
-            const [view, setView] = useState('list'); // 'list', 'detail', 'form'
+            const [view, setView] = useState('list'); // 'list', 'detail', 'form', 'print'
             const [catalog, setCatalog] = useState([]);
             const [searchTerm, setSearchTerm] = useState('');
             const [selectedFamily, setSelectedFamily] = useState('');
-            const [selectedOrigin, setSelectedOrigin] = useState(''); 
-            
-            // Audio & Sequencer State
+            const [selectedOrigin, setSelectedOrigin] = useState('');
             const [isPlaying, setIsPlaying] = useState(false);
             const [bpm, setBpm] = useState(100);
+            const [swing, setSwing] = useState(0); 
             const [steps, setSteps] = useState(16);
             const [currentStep, setCurrentStep] = useState(-1);
-            const [tracks, setTracks] = useState(DEFAULT_TRACKS);
-            
-            // Data State
+            const [tracks, setTracks] = useState([]);
             const [currentRhythm, setCurrentRhythm] = useState(null);
-            const [formData, setFormData] = useState(INITIAL_FORM);
+            const [formData, setFormData] = useState({ title: '', family: '', origin: '', instruments: '', note: '' });
             const [isSaving, setIsSaving] = useState(false);
             const [toast, setToast] = useState("");
+            const [showConfirmDelete, setShowConfirmDelete] = useState(null);
+            const [previewId, setPreviewId] = useState(null);
+            
+            // PDF Selection States
+            const [isSelectionMode, setIsSelectionMode] = useState(false);
+            const [selectedRhythms, setSelectedRhythms] = useState([]);
 
             const nextNoteTimeRef = useRef(0);
             const currentStepRef = useRef(0);
             const timerIDRef = useRef(null);
 
-            // --- INIT & AUTH ---
             useEffect(() => {
-                const initAuth = async () => {
-                    try {
-                        await auth.signInAnonymously();
-                    } catch (e) {
-                        console.error("Firebase Auth Error:", e);
-                    }
-                };
+                const initAuth = async () => { try { await auth.signInAnonymously(); } catch (e) { console.error(e); } };
                 initAuth();
-                
-                const unsubscribe = auth.onAuthStateChanged(setUser);
-                return () => unsubscribe();
-            }, []);
-
-            // --- FETCH DATA ---
-            useEffect(() => {
                 const q = db.collection(DB_COLLECTION);
-                const unsubscribe = q.onSnapshot((snapshot) => {
+                return q.onSnapshot((snapshot) => {
                     const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    items.sort((a, b) => {
-                        const dateA = a.createdAt?.seconds || 0;
-                        const dateB = b.createdAt?.seconds || 0;
-                        return dateB - dateA;
-                    });
+                    items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                     setCatalog(items);
-                }, (error) => {
-                    console.error("Erreur de lecture Firestore:", error);
                 });
-                
-                return () => unsubscribe();
             }, []);
 
             const uniqueFamilies = useMemo(() => [...new Set(catalog.map(r => r.family).filter(Boolean))].sort(), [catalog]);
@@ -265,212 +260,218 @@
 
             const filteredCatalog = useMemo(() => {
                 return catalog.filter(r => 
-                    ((r.title || "").toLowerCase().includes((searchTerm || "").toLowerCase()) || 
-                     (r.note || "").toLowerCase().includes((searchTerm || "").toLowerCase())) &&
+                    ((r.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || (r.note || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
                     (!selectedFamily || r.family === selectedFamily) &&
                     (!selectedOrigin || r.origin === selectedOrigin)
                 );
             }, [catalog, searchTerm, selectedFamily, selectedOrigin]);
 
-            // --- AUDIO SCHEDULER ---
+            // PDF Legend Generation
+            const legendSounds = useMemo(() => {
+                if (view !== 'print') return [];
+                const usedIds = new Set();
+                catalog.filter(r => selectedRhythms.includes(r.id)).forEach(r => {
+                    (r.tracks || []).forEach(t => usedIds.add(t.id));
+                });
+                return Object.entries(SOUND_LIBRARY).filter(([id, _]) => usedIds.has(id));
+            }, [view, catalog, selectedRhythms]);
+
             const nextNote = useCallback(() => {
                 const secondsPerBeat = 60.0 / bpm;
-                const stepTime = (secondsPerBeat * 4) / steps; 
+                const stepTime = (secondsPerBeat * 4) / steps;
+                let delay = 0;
+                if (currentStepRef.current % 2 === 0) delay = (swing / 100) * (stepTime * 0.5);
                 nextNoteTimeRef.current += stepTime;
                 currentStepRef.current = (currentStepRef.current + 1) % steps;
-            }, [bpm, steps]);
+                return delay;
+            }, [bpm, steps, swing]);
 
             const scheduleNote = useCallback((stepNumber, time) => {
                 setTimeout(() => setCurrentStep(stepNumber), (time - AudioEngine.ctx.currentTime) * 1000);
-                tracks.forEach(track => {
-                    if (track.steps.has(stepNumber)) AudioEngine.playTone(track.id, time);
+                tracks.forEach(track => { 
+                    const hit = track.steps?.[stepNumber] || (Array.isArray(track.steps) && track.steps.includes(stepNumber) ? 1 : 0);
+                    if (hit > 0 && !track.muted) {
+                        AudioEngine.playTone(track.id, time, track.volume || 1, hit === 2); 
+                    }
                 });
             }, [tracks]);
 
             const scheduler = useCallback(() => {
                 if (!AudioEngine.ctx) return;
                 while (nextNoteTimeRef.current < AudioEngine.ctx.currentTime + 0.1) {
-                    scheduleNote(currentStepRef.current, nextNoteTimeRef.current);
-                    nextNote();
+                    const swingDelay = nextNote();
+                    scheduleNote(currentStepRef.current, nextNoteTimeRef.current + swingDelay);
                 }
                 timerIDRef.current = window.setTimeout(scheduler, 25);
             }, [nextNote, scheduleNote]);
 
             useEffect(() => {
                 if (isPlaying) {
-                    if (!AudioEngine.ctx) AudioEngine.init();
-                    if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
-                    currentStepRef.current = -1; 
-                    nextNoteTimeRef.current = AudioEngine.ctx.currentTime + 0.05;
+                    AudioEngine.init();
+                    currentStepRef.current = -1; nextNoteTimeRef.current = AudioEngine.ctx.currentTime + 0.05;
                     scheduler();
-                } else {
-                    window.clearTimeout(timerIDRef.current);
-                    setCurrentStep(-1);
-                }
+                } else { window.clearTimeout(timerIDRef.current); setCurrentStep(-1); }
                 return () => window.clearTimeout(timerIDRef.current);
             }, [isPlaying, scheduler]);
 
-            const stopAudio = () => {
-                setIsPlaying(false);
-                setCurrentStep(-1);
-            };
+            const stopAudio = () => { setIsPlaying(false); setCurrentStep(-1); window.clearTimeout(timerIDRef.current); };
 
-            // --- NAVIGATION ---
-            const goToList = () => {
-                stopAudio();
-                setView('list');
-            };
-
-            const goToDetail = (item) => {
-                stopAudio();
-                setCurrentRhythm(item);
-                setBpm(item.bpm || 100);
-                setSteps(item.totalSteps || 16);
-                if (item.tracks) setTracks(item.tracks.map(t => ({ id: t.id, steps: new Set(t.steps) })));
-                setView('detail');
+            const goToList = () => { stopAudio(); setView('list'); setPreviewId(null); };
+            
+            const handleCardClick = (item) => {
+                if (isSelectionMode) {
+                    if (selectedRhythms.includes(item.id)) setSelectedRhythms(selectedRhythms.filter(id => id !== item.id));
+                    else setSelectedRhythms([...selectedRhythms, item.id]);
+                } else {
+                    stopAudio(); setCurrentRhythm(item); 
+                    setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
+                    const loadedTracks = item.tracks.map(t => ({
+                        id: t.id, 
+                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}),
+                        volume: t.volume || 1, muted: !!t.muted 
+                    }));
+                    setTracks(loadedTracks);
+                    setView('detail'); setPreviewId(null);
+                }
             };
 
             const goToForm = (item = null, isCopy = false) => {
                 stopAudio();
                 if (item) {
-                    setFormData({ 
-                        id: isCopy ? null : item.id, 
-                        title: item.title + (isCopy ? " (Copie)" : ""), 
-                        family: item.family, 
-                        origin: item.origin, 
-                        instruments: item.instruments, 
-                        note: item.note 
-                    });
-                    setBpm(item.bpm || 100);
-                    setSteps(item.totalSteps || 16);
-                    if (item.tracks) setTracks(item.tracks.map(t => ({ id: t.id, steps: new Set(t.steps) })));
+                    setFormData({ id: isCopy ? null : item.id, title: item.title + (isCopy ? " (Copie)" : ""), family: item.family, origin: item.origin, instruments: item.instruments, note: item.note });
+                    setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
+                    const loadedTracks = item.tracks.map(t => ({
+                        id: t.id, 
+                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}),
+                        volume: t.volume || 1, muted: !!t.muted 
+                    }));
+                    setTracks(loadedTracks);
                 } else {
-                    setFormData(INITIAL_FORM);
-                    setBpm(100); setSteps(16); setTracks(DEFAULT_TRACKS.map(t => ({...t, steps: new Set(t.steps)})));
+                    setFormData({ title: '', family: '', origin: '', instruments: '', note: '' });
+                    setBpm(100); setSteps(16); setSwing(0);
+                    setTracks([{ id: 'pandeiro-grave', steps: {0: 1, 8: 1}, volume: 1, muted: false }]);
                 }
-                setView('form');
+                setView('form'); setPreviewId(null);
             };
 
-            // --- SAVE / DELETE ---
+            const togglePreview = (item, e) => {
+                e.stopPropagation();
+                if (isSelectionMode) return;
+                if (previewId === item.id) { stopAudio(); setPreviewId(null); } 
+                else {
+                    stopAudio(); setCurrentRhythm(item); setBpm(item.bpm || 100); setSteps(item.totalSteps || 16);
+                    setTracks(item.tracks.map(t => ({ id: t.id, steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}), volume: 1, muted: false })));
+                    setPreviewId(item.id); setTimeout(() => setIsPlaying(true), 10);
+                }
+            };
+
+            const toggleStep = (tIdx, sIdx) => setTracks(prev => {
+                const nt = [...prev]; const target = { ...nt[tIdx] }; const currentVal = target.steps[sIdx] || 0;
+                const newVal = (currentVal + 1) % 3;
+                target.steps = { ...target.steps, [sIdx]: newVal };
+                if (newVal > 0 && !isPlaying) AudioEngine.playTone(target.id, 0, 1, newVal === 2);
+                nt[tIdx] = target; return nt;
+            });
+
             const handleSave = async (e) => {
                 e.preventDefault();
-                
-                if (!formData.title.trim()) {
-                    setToast("Veuillez entrer un titre.");
-                    setTimeout(() => setToast(""), 2500);
-                    return;
-                }
-                
+                if (!formData.title.trim()) return;
                 setIsSaving(true);
                 try {
-                    const serializedTracks = tracks.map(t => ({ id: t.id, steps: Array.from(t.steps) }));
-                    const authorId = user ? user.uid : "utilisateur_local";
-
-                    const dataToSave = {
-                        ...formData,
-                        tracks: serializedTracks,
-                        bpm, totalSteps: steps,
-                        authorId: authorId,
-                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    };
-
-                    if (formData.id) {
-                        await db.collection(DB_COLLECTION).doc(formData.id).update(dataToSave);
-                        setToast("Rythme mis à jour");
-                    } else {
-                        dataToSave.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                        await db.collection(DB_COLLECTION).add(dataToSave);
-                        setToast("Rythme créé avec succès");
-                    }
-                    
-                    setTimeout(() => setToast(""), 2500);
-                    goToList();
-                } catch (e) {
-                    console.error("Erreur de sauvegarde Firebase:", e);
-                    setToast("Erreur : Vérifiez vos règles Firestore !");
-                    setTimeout(() => setToast(""), 3500);
-                } finally {
-                    setIsSaving(false);
-                }
+                    const data = { ...formData, tracks, bpm, swing, totalSteps: steps, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+                    if (formData.id) await db.collection(DB_COLLECTION).doc(formData.id).update(data);
+                    else await db.collection(DB_COLLECTION).add(data);
+                    setToast("Enregistré avec succès !"); setTimeout(() => setToast(""), 2500); goToList();
+                } catch (e) { setToast("Erreur de sauvegarde"); } finally { setIsSaving(false); }
             };
 
-            const handleDelete = async (id) => {
-                if(!window.confirm("Supprimer ce rythme définitivement ?")) return;
+            const confirmDelete = async () => {
+                if(!showConfirmDelete) return;
                 try {
-                    await db.collection(DB_COLLECTION).doc(id).delete();
-                    goToList();
-                } catch(e) { 
-                    console.error("Erreur de suppression:", e); 
-                    setToast("Erreur de permission refusée");
-                    setTimeout(() => setToast(""), 3000);
-                }
+                    await db.collection(DB_COLLECTION).doc(showConfirmDelete).delete();
+                    setToast("Rythme supprimé"); setShowConfirmDelete(null);
+                    setTimeout(() => setToast(""), 2500); goToList();
+                } catch(e) { setToast("Erreur"); setShowConfirmDelete(null); }
             };
 
-            // --- SEQUENCER ACTIONS ---
-            const toggleStep = (trackIndex, stepIndex) => {
-                if(view === 'detail') return;
-                setTracks(prev => {
-                    const newTracks = [...prev];
-                    const targetTrack = { ...newTracks[trackIndex] };
-                    const newSteps = new Set(targetTrack.steps);
-                    if (newSteps.has(stepIndex)) newSteps.delete(stepIndex);
-                    else { newSteps.add(stepIndex); if (!isPlaying) AudioEngine.playTone(targetTrack.id); }
-                    targetTrack.steps = newSteps;
-                    newTracks[trackIndex] = targetTrack;
-                    return newTracks;
-                });
-            };
-
-            const changeTrackSound = (trackIndex, soundId) => {
-                setTracks(prev => {
-                    const newTracks = [...prev];
-                    newTracks[trackIndex] = { ...newTracks[trackIndex], id: soundId };
-                    return newTracks;
-                });
-                AudioEngine.playTone(soundId); 
-            };
-
-            const addTrack = () => setTracks([...tracks, { id: 'cowbell', steps: new Set() }]);
-            const removeTrack = (idx) => setTracks(tracks.filter((_, i) => i !== idx));
-
-            // --- SVG RENDERER ---
-            const renderCircle = (size = 320, isEditable = false) => {
-                const center = size / 2;
-                const numTracks = tracks.length;
-                const maxRadius = size/2 - 20; const minRadius = size/4; 
-                const spacing = numTracks > 1 ? (maxRadius - minRadius) / (numTracks - 1) : 0;
-
+            // --- RENDER MINI CIRCLE ---
+            const renderMiniCircle = (item) => {
+                const size = 110; const center = size / 2;
+                const rTracks = item.tracks || []; const nTracks = rTracks.length;
+                const tSteps = item.totalSteps || 16;
+                const maxR = size/2 - 8; const minR = size/4;
+                const spacing = nTracks > 1 ? (maxR - minR) / (nTracks - 1) : 0;
                 return (
-                    <div className="relative flex justify-center items-center my-8">
-                        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="touch-none select-none drop-shadow-xl">
-                            {/* Base Circle */}
-                            <circle cx={center} cy={center} r={minRadius - 20} className="fill-[#FFFDF9] stroke-neutral-200" strokeWidth="2" />
-                            <circle cx={center} cy={center} r={10} className="fill-brand-yellow" />
+                    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="bg-slate-100 rounded-full border-2 border-slate-200 shadow-inner">
+                        <line x1={center} y1={6} x2={center} y2={size-6} className="stroke-slate-300" strokeWidth="2.5" strokeLinecap="round" />
+                        <line x1={6} y1={center} x2={size-6} y2={center} className="stroke-slate-300" strokeWidth="2.5" strokeLinecap="round" />
+                        {rTracks.map((track, idx) => {
+                            // INVERSION ICI : maxR - (idx * spacing) au lieu de minR + ...
+                            const radius = nTracks === 1 ? maxR : maxR - (idx * spacing);
+                            const color = SOUND_LIBRARY[track.id]?.color || '#94a3b8';
+                            const stepsObj = Array.isArray(track.steps) ? track.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (track.steps || {});
+                            return (
+                                <g key={idx}>
+                                    <circle cx={center} cy={center} r={radius} className="stroke-slate-200 fill-none" strokeWidth="1.5" />
+                                    {Object.entries(stepsObj).map(([step, val], i) => val > 0 && (
+                                        <circle key={i} cx={center + radius * Math.cos((step/tSteps)*2*Math.PI - Math.PI/2)} cy={center + radius * Math.sin((step/tSteps)*2*Math.PI - Math.PI/2)} r="3.5" fill={color} className="drop-shadow-sm" />
+                                    ))}
+                                </g>
+                            );
+                        })}
+                    </svg>
+                );
+            };
 
-                            {/* Tracks */}
-                            {tracks.map((track, trackIdx) => {
-                                const radius = numTracks === 1 ? maxRadius : minRadius + (trackIdx * spacing);
-                                const soundInfo = SOUND_LIBRARY[track.id] || { color: '#94a3b8' };
-                                const hitRadius = Math.min(20, (2 * Math.PI * radius / steps / 2) - 2);
+            // --- RENDER MAIN CIRCLE (REFACTORED POUR IMPRESSION) ---
+            const renderCircle = (renderTracks, renderSteps, size = 340, isEditable = false, isInteractive = true) => {
+                const center = size / 2; const nTracks = renderTracks.length;
+                const maxRadius = size/2 - 35; const minRadius = size/4; 
+                const spacing = nTracks > 1 ? (maxRadius - minRadius) / (nTracks - 1) : 0;
+                
+                return (
+                    <div className={`relative flex justify-center items-center ${isInteractive ? 'my-6' : 'my-2'}`}>
+                        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="touch-none select-none">
+                            <circle cx={center} cy={center} r={maxRadius + 20} className="fill-slate-50 stroke-slate-200" strokeWidth="1" strokeDasharray="6 6" />
+                            <line x1={center} y1={20} x2={center} y2={size-20} className="stroke-slate-300" strokeWidth="3" strokeLinecap="round" />
+                            <line x1={20} y1={center} x2={size-20} y2={center} className="stroke-slate-300" strokeWidth="3" strokeLinecap="round" />
+                            
+                            {renderTracks.map((_, idx) => {
+                                // INVERSION ICI : maxRadius - (idx * spacing)
+                                const radius = nTracks === 1 ? maxRadius : maxRadius - (idx * spacing);
+                                return <circle key={`line-${idx}`} cx={center} cy={center} r={radius} className="stroke-slate-300 fill-none" strokeWidth="2" />;
+                            })}
+                            
+                            <circle cx={center} cy={center} r={minRadius - 20} className="fill-white stroke-slate-200" strokeWidth="2" />
+                            <circle cx={center} cy={center} r={8} className="fill-slate-800" />
+
+                            {renderTracks.map((track, idx) => {
+                                // INVERSION ICI AUSSI
+                                const radius = nTracks === 1 ? maxRadius : maxRadius - (idx * spacing);
+                                const color = SOUND_LIBRARY[track.id]?.color || '#94a3b8';
+                                const stepsObj = Array.isArray(track.steps) ? track.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (track.steps || {});
 
                                 return (
-                                    <g key={trackIdx}>
-                                        <circle cx={center} cy={center} r={radius} className="stroke-neutral-200 fill-none pointer-events-none" strokeWidth="1" strokeDasharray="4 4" />
-                                        {Array.from({length: steps}).map((_, i) => {
-                                            const angle = (i / steps) * 2 * Math.PI - Math.PI / 2;
-                                            const x = center + radius * Math.cos(angle);
-                                            const y = center + radius * Math.sin(angle);
-                                            const isActive = track.steps.has(i);
-                                            const isCurrent = currentStep === i;
+                                    <g key={idx} opacity={track.muted && isInteractive ? 0.3 : 1}>
+                                        {Array.from({length: renderSteps}).map((_, i) => {
+                                            const angle = (i / renderSteps) * 2 * Math.PI - Math.PI / 2;
+                                            const x = center + radius * Math.cos(angle); const y = center + radius * Math.sin(angle);
+                                            const val = stepsObj[i] || 0; 
+                                            const current = isInteractive && currentStep === i;
+                                            const isQuarter = i % (renderSteps/4) === 0;
                                             
                                             return (
-                                                <g key={i} onClick={() => isEditable && toggleStep(trackIdx, i)} className={isEditable ? "cursor-pointer" : ""}>
-                                                    {isEditable && <circle cx={x} cy={y} r={hitRadius + 5} className="fill-transparent" />}
-                                                    <circle cx={x} cy={y} r={isActive ? 7 : 4} fill={isActive ? soundInfo.color : '#e5e7eb'} 
-                                                        className="transition-all duration-75"
+                                                <g key={i} onClick={() => isEditable && toggleStep(idx, i)} className={isEditable ? "cursor-pointer" : ""}>
+                                                    {isEditable && <circle cx={x} cy={y} r={16} className="fill-transparent" />}
+                                                    <circle cx={x} cy={y} 
+                                                        r={val === 2 ? 11 : val === 1 ? 8 : (isQuarter ? 5 : 3)} 
+                                                        fill={val > 0 ? color : (isQuarter ? '#cbd5e1' : '#e2e8f0')} 
+                                                        className={isInteractive ? "transition-all" : ""}
                                                         style={{ 
-                                                            stroke: isCurrent ? '#1f2937' : 'none', strokeWidth: isCurrent ? 2 : 0, 
-                                                            opacity: isActive || isCurrent ? 1 : (isEditable ? 0.6 : 0.2) 
+                                                            stroke: current ? '#0f172a' : (val === 2 ? 'rgba(255,255,255,0.8)' : 'none'), 
+                                                            strokeWidth: current ? 3 : (val === 2 ? 2 : 0), 
+                                                            opacity: val > 0 || current ? 1 : (isEditable ? 0.8 : 0.4),
+                                                            filter: val > 0 && isInteractive ? 'drop-shadow(0px 2px 4px rgba(0,0,0,0.3))' : 'none'
                                                         }}
                                                     />
                                                 </g>
@@ -479,143 +480,172 @@
                                     </g>
                                 );
                             })}
-
-                            {/* Playhead */}
-                            {isPlaying && (
-                                <line x1={center} y1={center} 
-                                    x2={center + (maxRadius + 10) * Math.cos((currentStep / steps) * 2 * Math.PI - Math.PI / 2)} 
-                                    y2={center + (maxRadius + 10) * Math.sin((currentStep / steps) * 2 * Math.PI - Math.PI / 2)} 
-                                    className="stroke-brand-coral/50 pointer-events-none" strokeWidth="3" strokeLinecap="round"
-                                />
-                            )}
+                            {isInteractive && isPlaying && <line x1={center} y1={center} x2={center + (maxRadius + 20) * Math.cos((currentStep / renderSteps) * 2 * Math.PI - Math.PI / 2)} y2={center + (maxRadius + 20) * Math.sin((currentStep / renderSteps) * 2 * Math.PI - Math.PI / 2)} className="stroke-blue-600" strokeWidth="4" strokeLinecap="round" />}
                         </svg>
                         
-                        {/* Play Button Overlay */}
-                        <button 
-                            onClick={(e) => { e.preventDefault(); AudioEngine.init(); setIsPlaying(!isPlaying); }}
-                            className={`absolute z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transform active:scale-95 transition-all ${isPlaying ? 'bg-brand-coral text-white' : 'bg-brand-yellow text-white'}`}
-                        >
-                            {isPlaying ? <Icon name="Pause" size={28} /> : <Icon name="Play" size={28} className="ml-1" />}
-                        </button>
+                        {isInteractive && (
+                            <button onClick={(e) => { e.preventDefault(); AudioEngine.init(); setIsPlaying(!isPlaying); }} className={`absolute z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all border-4 border-white ${isPlaying ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                                {isPlaying ? <Icon name="Pause" size={28} /> : <Icon name="Play" size={28} className="ml-1" />}
+                            </button>
+                        )}
                     </div>
                 );
             };
 
             return (
-                <>
-                    {toast && (
-                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-neutral-900 text-brand-yellow px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] animate-bounce">
-                            {toast}
+                <div className="animate-in pb-10">
+                    {toast && <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] border border-slate-700">{toast}</div>}
+                    
+                    {showConfirmDelete && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in">
+                            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-slate-200">
+                                <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Icon name="AlertCircle" size={32} /></div>
+                                <h4 className="text-2xl font-display font-bold uppercase mb-3 text-slate-900">Supprimer ?</h4>
+                                <p className="text-slate-500 text-sm mb-8 font-medium">Cette action est irréversible.</p>
+                                <div className="flex gap-4">
+                                    <button onClick={() => setShowConfirmDelete(null)} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-600 hover:bg-slate-200 transition-colors">Annuler</button>
+                                    <button onClick={confirmDelete} className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-red-500/30 hover:bg-red-600 transition-colors">Supprimer</button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
-                    {/* --- VUE: LISTE (CARNET) --- */}
                     {view === 'list' && (
-                        <div className="min-h-screen pb-12">
-                            <header className="brand-gradient text-white px-5 py-5 sticky top-0 z-50 brand-shadow">
-                                <div className="max-w-6xl mx-auto flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <div className="bg-white/20 p-2.5 rounded-2xl backdrop-blur-lg shadow-inner text-white"><Icon name="Music" size={28} /></div>
-                                        <div>
-                                            <h1 className="text-2xl font-display font-bold uppercase leading-none tracking-tight veneer-title text-white">Rythmes</h1>
-                                            <span className="text-[10px] font-bold opacity-90 uppercase tracking-[0.2em] block mt-1">Senzala Villefranche</span>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => goToForm()} className="bg-white text-brand-coral px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2">
-                                        <Icon name="Plus" size={16}/> Créer
+                        <div className="min-h-screen">
+                            <header className="brand-gradient text-white px-6 py-6 sticky top-0 z-50 shadow-xl flex justify-between items-center">
+                                <div className="flex items-center gap-4 cursor-pointer" onClick={() => {setView('list'); setIsSelectionMode(false);}}>
+                                    <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md shadow-inner text-white border border-white/20"><Icon name="Music" size={28} /></div>
+                                    <div><h1 className="text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase">Senzala Studio</span></div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`px-4 py-2.5 rounded-2xl font-bold text-[11px] uppercase transition-all hidden sm:flex items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                                        <Icon name="Printer" size={16}/> {isSelectionMode ? 'Annuler' : 'Livret PDF'}
                                     </button>
+                                    <button onClick={() => goToForm()} className="bg-white text-blue-700 px-6 py-2.5 rounded-2xl font-bold text-[11px] uppercase shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2"><Icon name="Plus" size={16}/> Créer</button>
                                 </div>
                             </header>
 
-                            <main className="max-w-6xl mx-auto p-4 md:p-10">
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-[2.5rem] shadow-sm border border-neutral-100 mb-8">
-                                    <div className="md:col-span-6 relative">
-                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-yellow"><Icon name="Search" size={20} /></div>
-                                        <input type="text" placeholder="Rechercher un rythme..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-neutral-50 border-none outline-none focus:ring-4 focus:ring-brand-yellow/10 font-medium text-base transition-all" />
+                            {isSelectionMode && (
+                                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 p-4 rounded-full flex items-center gap-6 shadow-2xl z-50 animate-in border border-slate-700">
+                                    <span className="text-white font-bold px-4 text-sm">{selectedRhythms.length} sélectionné(s)</span>
+                                    <button onClick={() => { stopAudio(); setView('print'); }} disabled={selectedRhythms.length === 0} className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-xs uppercase disabled:opacity-50 hover:bg-blue-500 transition-colors flex items-center gap-2">
+                                        <Icon name="Printer" size={16}/> Générer
+                                    </button>
+                                </div>
+                            )}
+
+                            <main className="max-w-6xl mx-auto p-4 md:p-10 space-y-8">
+                                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
+                                    <div className="w-full md:flex-1 relative">
+                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div>
+                                        <input type="text" placeholder="Rechercher un rythme..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" />
                                     </div>
-                                    <div className="md:col-span-3">
-                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-neutral-50 border-none font-bold text-brand-brown text-xs uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none text-center">
-                                            <option value="">Toutes Familles</option>
-                                            {uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}
-                                        </select>
+                                    <div className="flex gap-4 w-full md:w-auto">
+                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="flex-1 md:w-48 px-6 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-xs uppercase tracking-widest outline-none cursor-pointer border border-slate-100"><option value="">Toutes Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
+                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="flex-1 md:w-48 px-6 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-xs uppercase tracking-widest outline-none cursor-pointer border border-slate-100"><option value="">Toutes Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
                                     </div>
-                                    <div className="md:col-span-3">
-                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-neutral-50 border-none font-bold text-brand-purple text-xs uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none text-center">
-                                            <option value="">Toutes Origines</option>
-                                            {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
-                                        </select>
-                                    </div>
+                                    <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`sm:hidden w-full px-4 py-4 rounded-2xl font-bold text-xs uppercase transition-all flex justify-center items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                        <Icon name="Printer" size={16}/> {isSelectionMode ? 'Annuler Selection' : 'Livret PDF'}
+                                    </button>
                                 </div>
 
-                                {filteredCatalog.length === 0 ? (
-                                    <div className="text-center text-neutral-400 py-20 font-bold uppercase tracking-widest text-sm">Aucun rythme trouvé</div>
-                                ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {filteredCatalog.map(r => (
-                                            <div key={r.id} onClick={() => goToDetail(r)} className="bg-white p-8 rounded-[3rem] shadow-sm border-2 border-transparent hover:border-brand-yellow/30 transition-all cursor-pointer flex flex-col h-full card-hover">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <span className="px-3 py-1 bg-brand-yellow/10 text-brand-brown text-[9px] font-black uppercase tracking-[0.2em] rounded-lg border border-brand-yellow/20">{r.family || 'Général'}</span>
-                                                    <span className="text-[10px] font-mono text-neutral-400 font-bold bg-neutral-50 px-2 py-1 rounded">{r.bpm} BPM</span>
-                                                </div>
-                                                <h3 className="text-2xl font-display font-bold text-neutral-800 uppercase leading-[1] mb-2 veneer-title tracking-tight">{r.title}</h3>
-                                                {r.origin && <p className="text-xs font-bold text-brand-coral uppercase tracking-widest mb-4 opacity-80">{r.origin}</p>}
-                                                <div className="mt-auto flex gap-1 pt-4">
-                                                    {(r.tracks || []).slice(0,5).map((t, i) => (
-                                                        <div key={i} className="flex-1 h-1.5 rounded-full" style={{backgroundColor: SOUND_LIBRARY[t.id]?.color || '#cbd5e1'}}></div>
-                                                    ))}
-                                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {filteredCatalog.map(r => (
+                                        <div key={r.id} onClick={() => handleCardClick(r)} className={`bg-white p-8 rounded-[2.5rem] shadow-sm border-2 transition-all cursor-pointer flex flex-col h-full card-hover animate-in relative group overflow-hidden ${isSelectionMode && selectedRhythms.includes(r.id) ? 'border-blue-500 bg-blue-50/50 scale-[0.98]' : 'border-transparent hover:border-blue-300'}`}>
+                                            <div className="flex justify-between items-start mb-6">
+                                                <span className="bg-white text-slate-600 shadow-sm border border-slate-200 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{r.family || 'Général'}</span>
+                                                
+                                                {isSelectionMode ? (
+                                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${selectedRhythms.includes(r.id) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 border-slate-300 text-transparent'}`}>
+                                                        <Icon name="Check" size={16}/>
+                                                    </div>
+                                                ) : (
+                                                    <button onClick={(e) => togglePreview(r, e)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${previewId === r.id ? 'bg-blue-600 text-white scale-110 shadow-lg' : 'bg-slate-100 text-blue-600 hover:bg-blue-600 hover:text-white'}`}>
+                                                        <Icon name={previewId === r.id ? "Pause" : "Play"} size={18} className={previewId !== r.id ? "ml-0.5" : ""} />
+                                                    </button>
+                                                )}
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            <div className="flex justify-center mb-8">{renderMiniCircle(r)}</div>
+                                            <div className="text-center mt-auto">
+                                                <h3 className="text-2xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none">{r.title}</h3>
+                                                {r.origin && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{r.origin}</p>}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </main>
                         </div>
                     )}
 
-                    {/* --- VUE: PLAQUETTE (DETAIL) --- */}
                     {view === 'detail' && currentRhythm && (
-                        <div className="min-h-screen pb-12">
-                            <div className="max-w-4xl mx-auto md:mt-10 bg-white md:rounded-[4rem] shadow-2xl border border-neutral-100 overflow-hidden min-h-screen md:min-h-0">
-                                <div className="p-8 md:p-14 border-b-8 border-brand-yellow/10 bg-neutral-50/40 relative">
-                                    <button onClick={goToList} className="absolute top-6 left-6 p-3 bg-white rounded-full shadow-sm text-brand-brown hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
-                                    
-                                    <div className="text-center mt-6">
-                                        <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
-                                            {currentRhythm.family && <span className="px-4 py-1.5 bg-brand-coral text-white text-[10px] font-black uppercase rounded-xl shadow-md tracking-widest">{currentRhythm.family}</span>}
-                                            {currentRhythm.origin && <span className="px-4 py-1.5 bg-white text-brand-brown border border-neutral-200 text-[10px] font-black uppercase rounded-xl shadow-sm">{currentRhythm.origin}</span>}
-                                        </div>
-                                        <h2 className="text-5xl md:text-7xl font-display font-bold text-neutral-900 uppercase tracking-tighter mb-2 veneer-title leading-none">{currentRhythm.title}</h2>
+                        <div className="min-h-screen pb-12 animate-in">
+                            <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden">
+                                <div className="p-8 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center">
+                                    <button onClick={goToList} className="absolute top-6 left-6 p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
+                                    <div className="flex justify-center gap-3 mb-6 mt-4">
+                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{currentRhythm.family}</span>}
+                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{currentRhythm.origin}</span>}
                                     </div>
+                                    <h2 className="text-5xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none">{currentRhythm.title}</h2>
                                     
                                     <div className="absolute top-6 right-6 flex gap-2">
-                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white text-brand-yellow rounded-xl shadow-sm hover:bg-brand-yellow/10 transition-colors" title="Copier (Dupliquer)"><Icon name="Copy" size={18}/></button>
-                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white text-brand-purple rounded-xl shadow-sm hover:bg-brand-purple/5 transition-colors" title="Modifier"><Icon name="Edit3" size={18}/></button>
-                                        <button onClick={() => handleDelete(currentRhythm.id)} className="p-3 bg-white text-neutral-300 hover:text-red-500 rounded-xl shadow-sm transition-colors" title="Supprimer"><Icon name="Trash2" size={18}/></button>
+                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors" title="Copier"><Icon name="Copy" size={18}/></button>
+                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors" title="Modifier"><Icon name="Edit3" size={18}/></button>
+                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors" title="Supprimer"><Icon name="Trash2" size={18}/></button>
                                     </div>
                                 </div>
-
-                                <div className="p-6 md:p-14 flex flex-col items-center">
-                                    <div className="w-full flex flex-col items-center mb-12 bg-white p-6 rounded-[3rem] shadow-sm border border-neutral-100">
-                                        {renderCircle(window.innerWidth < 400 ? 280 : 360, false)}
+                                <div className="p-6 md:p-12 flex flex-col items-center bg-white">
+                                    <div className="w-full grid lg:grid-cols-12 gap-12 items-start mb-12">
                                         
-                                        <div className="flex items-center gap-6 mt-4 bg-neutral-50 px-6 py-3 rounded-2xl border border-neutral-100">
-                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Tempo</span>
-                                            <input type="range" min="60" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-32 accent-brand-coral"/>
-                                            <span className="font-mono font-bold text-brand-coral w-8 text-right">{bpm}</span>
+                                        {/* Player Section */}
+                                        <div className="lg:col-span-7 flex flex-col items-center bg-slate-50 p-8 rounded-[3rem] shadow-inner border border-slate-100">
+                                            {renderCircle(tracks, steps, window.innerWidth < 400 ? 280 : 380, false, true)}
+                                            
+                                            <div className="flex flex-col md:flex-row gap-6 mt-8 w-full">
+                                                <div className="flex-1 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
+                                                    <div className="flex justify-between text-[11px] font-black uppercase text-slate-500 mb-3"><span>Tempo</span><span className="text-blue-600">{bpm} BPM</span></div>
+                                                    <input type="range" min="40" max="200" value={bpm} onChange={e => setBpm(Number(e.target.value))} className="w-full" />
+                                                </div>
+                                                <div className="flex-1 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
+                                                    <div className="flex justify-between text-[11px] font-black uppercase text-slate-500 mb-3"><span>Swing (Ginga)</span><span className="text-orange-500">{swing}%</span></div>
+                                                    <input type="range" min="0" max="100" value={swing} onChange={e => setSwing(Number(e.target.value))} className="w-full" style={{accentColor: '#f97316'}} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Mixer Section */}
+                                        <div className="lg:col-span-5 space-y-4">
+                                            <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2 bg-slate-100 p-3 rounded-xl inline-flex"><Icon name="Settings2" size={16}/> Mixeur Temps Réel</h4>
+                                            <div className="space-y-3">
+                                                {tracks.map((track, idx) => {
+                                                    const trackColor = SOUND_LIBRARY[track.id]?.color;
+                                                    return (
+                                                        <div key={idx} className={`p-4 rounded-2xl flex items-center gap-4 transition-all border ${track.muted ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                                            <div className="w-4 h-4 rounded-full shadow-inner" style={{backgroundColor: trackColor}}></div>
+                                                            <div className="flex-1">
+                                                                <div className="text-[11px] font-bold text-slate-700 uppercase mb-2 truncate">{SOUND_LIBRARY[track.id]?.name}</div>
+                                                                <input type="range" min="0" max="1" step="0.1" value={track.volume} onChange={(e) => changeTrackVol(idx, e.target.value)} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer" style={{accentColor: trackColor}} />
+                                                            </div>
+                                                            <button onClick={() => toggleMute(idx)} className={`p-3 rounded-xl transition-colors ${track.muted ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><Icon name={track.muted ? "VolumeX" : "Volume2"} size={18} /></button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
 
+                                    {/* Infos Text */}
                                     <div className="grid md:grid-cols-2 gap-8 w-full">
                                         {currentRhythm.instruments && (
-                                            <section className="bg-brand-yellow/5 p-8 rounded-[2.5rem] border border-brand-yellow/10">
-                                                <h4 className="text-[11px] font-black text-brand-yellow mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4>
-                                                <p className="font-bold text-neutral-800 leading-relaxed">{currentRhythm.instruments}</p>
+                                            <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200">
+                                                <h4 className="text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4>
+                                                <p className="font-bold text-slate-800 leading-relaxed">{currentRhythm.instruments}</p>
                                             </section>
                                         )}
                                         {currentRhythm.note && (
-                                            <section className="bg-brand-purple/5 p-8 rounded-[2.5rem] border border-brand-purple/10 md:col-span-2">
-                                                <h4 className="text-[11px] font-black text-brand-purple mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Info" size={16}/> Commentaires & Histoire</h4>
-                                                <p className="font-medium text-neutral-700 leading-relaxed whitespace-pre-wrap">{currentRhythm.note}</p>
+                                            <section className="bg-blue-50 p-8 rounded-[2.5rem] border border-blue-100 md:col-span-2">
+                                                <h4 className="text-[11px] font-black text-blue-600 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Info" size={16}/> Commentaires & Pédagogie</h4>
+                                                <p className="font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">{currentRhythm.note}</p>
                                             </section>
                                         )}
                                     </div>
@@ -624,98 +654,101 @@
                         </div>
                     )}
 
-                    {/* --- VUE: FORMULAIRE (CREATION/EDITION) --- */}
                     {view === 'form' && (
-                        <div className="min-h-screen pb-12 bg-neutral-100">
-                            <div className="max-w-4xl mx-auto bg-white md:mt-10 md:rounded-[4rem] shadow-2xl overflow-hidden">
-                                
-                                <div className="bg-neutral-50 p-8 md:p-10 border-b border-neutral-200 flex justify-between items-center sticky top-0 z-20">
-                                    <h2 className="text-3xl font-display font-bold text-brand-coral uppercase veneer-title leading-none">{formData.id ? 'Éditer le rythme' : 'Nouveau Rythme'}</h2>
-                                    <button onClick={goToList} className="text-neutral-400 hover:text-brand-brown p-2"><Icon name="ArrowLeft" size={28} /></button>
+                        <div className="min-h-screen pb-12 bg-slate-100 animate-in">
+                            <div className="max-w-5xl mx-auto bg-white md:mt-10 md:rounded-[3rem] shadow-2xl overflow-hidden border border-slate-200">
+                                <div className="bg-slate-50 p-8 md:p-10 border-b border-slate-200 flex justify-between items-center sticky top-0 z-20">
+                                    <h2 className="text-3xl font-display font-bold text-slate-800 uppercase veneer-title leading-none">{formData.id ? 'Éditer' : 'Nouveau'}</h2>
+                                    <button onClick={goToList} className="text-slate-400 hover:text-slate-800 p-2 transition-colors bg-white rounded-full shadow-sm border border-slate-200"><Icon name="ArrowLeft" size={24} /></button>
                                 </div>
-
-                                <form onSubmit={handleSave} className="p-6 md:p-10 space-y-12">
+                                <form onSubmit={handleSave} className="p-6 md:p-12 space-y-12">
                                     
+                                    {/* Méta */}
                                     <div className="space-y-6">
                                         <div>
-                                            <label className="text-[10px] font-black text-brand-brown uppercase mb-2 block tracking-widest">Nom du rythme *</label>
-                                            <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-neutral-50 rounded-[2rem] font-display font-bold text-2xl outline-none focus:ring-4 focus:ring-brand-yellow/20 border border-neutral-200 uppercase veneer-title" placeholder="Ex: Ijexá..." />
+                                            <label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Nom du rythme *</label>
+                                            <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title" placeholder="EX: IJEXÁ..." />
                                         </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-2 gap-6">
                                             <div>
-                                                <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Famille</label>
-                                                <input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-xs uppercase border border-neutral-200 outline-none" placeholder="Ex: Samba..." />
-                                                <datalist id="family-suggestions">
-                                                    {uniqueFamilies.map(t => <option key={t} value={t} />)}
-                                                </datalist>
+                                                <label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Famille</label>
+                                                <input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-sm uppercase border border-slate-200 outline-none focus:bg-white" placeholder="Samba, Capoeira..." />
+                                                <datalist id="family-suggestions">{uniqueFamilies.map(t => <option key={t} value={t} />)}</datalist>
                                             </div>
                                             <div>
-                                                <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Origine</label>
-                                                <input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-xs uppercase border border-neutral-200 outline-none" placeholder="Ex: Bahia..." />
-                                                <datalist id="origin-suggestions">
-                                                    {uniqueOrigins.map(o => <option key={o} value={o} />)}
-                                                </datalist>
+                                                <label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Origine</label>
+                                                <input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-sm uppercase border border-slate-200 outline-none focus:bg-white" placeholder="Bahia, Pernambuco..." />
+                                                <datalist id="origin-suggestions">{uniqueOrigins.map(o => <option key={o} value={o} />)}</datalist>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="border-t-4 border-brand-yellow/20 pt-10">
-                                        <h3 className="text-xl font-display font-bold text-brand-yellow uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={24}/> Studio Interactif</h3>
+                                    {/* Le Studio */}
+                                    <div className="pt-8 border-t border-slate-200">
+                                        <h3 className="text-xl font-display font-bold text-slate-800 uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={24}/> Studio Interactif</h3>
                                         
-                                        <div className="bg-neutral-50 rounded-[3rem] p-6 border border-neutral-200 flex flex-col items-center">
-                                            {renderCircle(window.innerWidth < 400 ? 280 : 340, true)}
+                                        <div className="grid lg:grid-cols-12 gap-8">
                                             
-                                            <div className="w-full grid grid-cols-2 gap-4 mt-8">
-                                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 flex flex-col items-center">
-                                                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Tempo ({bpm})</span>
-                                                    <input type="range" min="60" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full accent-brand-coral"/>
-                                                </div>
-                                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 flex flex-col items-center">
-                                                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Divisions</span>
-                                                    <div className="flex gap-1">
-                                                        {[8, 12, 16, 24].map(s => (
-                                                            <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); setTracks(tracks.map(t=>({...t, steps:new Set()})))}} className={`px-2 py-1 rounded text-[10px] font-bold ${steps===s ? 'bg-brand-brown text-white' : 'bg-neutral-100 text-neutral-500'}`}>{s}</button>
-                                                        ))}
+                                            {/* Render Cercle */}
+                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2.5rem] p-6 border border-slate-200 flex flex-col items-center shadow-inner">
+                                                {renderCircle(tracks, steps, window.innerWidth < 400 ? 280 : 380, true, true)}
+                                                
+                                                <div className="w-full grid grid-cols-2 gap-4 mt-6">
+                                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Tempo ({bpm})</span>
+                                                        <input type="range" min="40" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full"/>
+                                                    </div>
+                                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Divisions</span>
+                                                        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                                                            {[8, 12, 16, 24].map(s => (
+                                                                <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); setTracks(tracks.map(t=>({...t, steps:{}})))}} className={`px-2.5 py-1 rounded text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="w-full mt-6 space-y-2">
+                                            {/* Pistes */}
+                                            <div className="lg:col-span-5 space-y-3">
+                                                <div className="bg-blue-50 text-blue-700 text-xs p-4 rounded-xl border border-blue-100 font-medium mb-6">
+                                                    💡 <strong>Astuce :</strong> Cliquez plusieurs fois sur un point pour marquer un <strong>accent fort</strong>.
+                                                </div>
+
                                                 {tracks.map((track, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-neutral-100">
-                                                        <div className="w-3 h-3 rounded-full ml-2" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
-                                                        <select value={track.id} onChange={(e) => changeTrackSound(idx, e.target.value)} className="flex-1 bg-transparent text-xs font-bold p-2 outline-none appearance-none cursor-pointer">
-                                                            {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (
-                                                                <option key={key} value={key}>{lib.name}</option>
-                                                            ))}
+                                                    <div key={idx} className="flex items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200">
+                                                        <div className="w-4 h-4 rounded-full shadow-inner ml-2 shrink-0" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
+                                                        <select value={track.id} onChange={(e) => { const nt = [...tracks]; nt[idx].id = e.target.value; setTracks(nt); AudioEngine.playTone(e.target.value); }} className="flex-1 bg-transparent text-[13px] font-bold py-2 outline-none cursor-pointer border-none text-slate-700">
+                                                            {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (<option key={key} value={key}>{lib.name}</option>))}
                                                         </select>
-                                                        <button type="button" onClick={() => removeTrack(idx)} className="p-2 text-neutral-300 hover:text-red-500"><Icon name="Trash2" size={16}/></button>
+                                                        <button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-xl"><Icon name="Trash2" size={18}/></button>
                                                     </div>
                                                 ))}
-                                                {tracks.length < 6 && (
-                                                    <button type="button" onClick={addTrack} className="w-full py-3 border-2 border-dashed border-neutral-300 rounded-2xl text-xs font-bold text-neutral-500 uppercase tracking-widest hover:border-brand-coral hover:text-brand-coral transition-colors flex justify-center items-center gap-2">
-                                                        <Icon name="Plus" size={14}/> Ajouter un son
+                                                {tracks.length < 8 && (
+                                                    <button type="button" onClick={() => setTracks([...tracks, { id: 'shaker', steps: {}, volume: 1, muted: false }])} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-xs font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 transition-all flex justify-center items-center gap-2 mt-4">
+                                                        <Icon name="Plus" size={16}/> Ajouter un instrument
                                                     </button>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-6 border-t-4 border-brand-purple/20 pt-10">
+                                    {/* Textes Libres */}
+                                    <div className="space-y-6 pt-8 border-t border-slate-200">
                                         <div>
-                                            <label className="text-[10px] font-black text-brand-purple uppercase mb-2 block tracking-widest">Instruments recommandés (Texte)</label>
-                                            <input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-sm border border-neutral-200 outline-none" placeholder="Ex: 3 Atabaques, 1 Agogo..." />
+                                            <label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Instruments recommandés</label>
+                                            <input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-medium text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100" placeholder="Ex: 3 Surdos, 1 Caisse claire..." />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Commentaires / Instructions</label>
-                                            <textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-5 bg-neutral-50 rounded-[2rem] font-medium text-sm border border-neutral-200 outline-none resize-none" placeholder="Comment jouer ce rythme..." />
+                                            <label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Commentaires / Pédagogie</label>
+                                            <textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-medium text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100" placeholder="Comment se joue ce rythme, particularités..." />
                                         </div>
                                     </div>
 
-                                    <div className="pt-8">
-                                        <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-6 rounded-[2.5rem] font-black shadow-xl uppercase text-[14px] tracking-[0.2em] active:scale-95 transition-transform flex justify-center items-center gap-3 disabled:opacity-50">
-                                            {isSaving ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : <Icon name="Save" size={20}/>}
+                                    {/* Bouton Submit */}
+                                    <div className="pt-6">
+                                        <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-6 rounded-[2rem] font-black shadow-xl shadow-blue-900/20 uppercase text-[15px] tracking-[0.2em] active:scale-[0.98] transition-all flex justify-center items-center gap-3 disabled:opacity-50">
+                                            {isSaving ? <Icon name="RefreshCw" size={22} className="animate-spin" /> : <Icon name="Save" size={22}/>}
                                             Sauvegarder dans le carnet
                                         </button>
                                     </div>
@@ -723,10 +756,82 @@
                             </div>
                         </div>
                     )}
-                </>
+
+                    {/* --- VUE: IMPRESSION (PDF) --- */}
+                    {view === 'print' && (
+                        <div className="bg-white min-h-screen text-slate-900 font-sans p-8 md:p-16">
+                            
+                            {/* Contrôles d'impression (cachés sur le PDF) */}
+                            <div className="no-print flex gap-4 mb-12 justify-center">
+                                <button onClick={() => setView('list')} className="px-6 py-2 border-2 border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors uppercase tracking-widest">Fermer</button>
+                                <button onClick={() => window.print()} className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"><Icon name="Printer" size={16}/> Imprimer PDF</button>
+                            </div>
+
+                            <div className="max-w-4xl mx-auto">
+                                {/* Header du PDF */}
+                                <div className="text-center border-b-4 border-slate-200 pb-8 mb-12">
+                                    <h1 className="text-5xl font-display font-bold uppercase tracking-tight veneer-title mb-2">Carnet de Rythmes</h1>
+                                    <p className="text-sm font-bold text-slate-500 tracking-[0.3em] uppercase">Senzala Villefranche</p>
+                                </div>
+
+                                {/* Légende Dynamique */}
+                                <div className="mb-16 bg-slate-50 p-8 rounded-3xl border border-slate-200 break-inside-avoid">
+                                    <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2"><Icon name="Disc" size={18}/> Légende des instruments</h2>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
+                                        {legendSounds.map(([key, lib]) => (
+                                            <div key={key} className="flex items-center gap-3">
+                                                <div className="w-5 h-5 rounded-full border border-slate-300 shadow-sm shrink-0" style={{backgroundColor: lib.color}}></div>
+                                                <span className="text-xs font-bold uppercase text-slate-700 truncate">{lib.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-8 pt-4 border-t border-slate-200 flex gap-6 text-xs font-medium text-slate-500">
+                                        <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-400"></div> Note Normale</span>
+                                        <span className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-slate-400 ring-2 ring-slate-800"></div> Note Accentuée</span>
+                                    </div>
+                                </div>
+
+                                {/* Liste des Rythmes */}
+                                <div className="space-y-24">
+                                    {catalog.filter(r => selectedRhythms.includes(r.id)).map(r => {
+                                        // Conversion des datas pour le renderCircle
+                                        const printTracks = (r.tracks || []).map(t => ({
+                                            ...t, 
+                                            steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}) 
+                                        }));
+
+                                        return (
+                                            <div key={r.id} className="page-break">
+                                                <div className="text-center mb-8">
+                                                    <h3 className="text-4xl font-display font-bold uppercase mb-3 veneer-title text-slate-900">{r.title}</h3>
+                                                    <div className="flex justify-center items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                                                        {r.family && <span className="bg-slate-100 px-3 py-1 rounded">{r.family}</span>}
+                                                        {r.origin && <span>• {r.origin}</span>}
+                                                        <span>• {r.bpm} BPM</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex justify-center mb-8">
+                                                    {/* On utilise renderCircle en mode non-interactif et plus grand */}
+                                                    {renderCircle(printTracks, r.totalSteps || 16, 450, false, false)}
+                                                </div>
+                                                
+                                                {(r.instruments || r.note) && (
+                                                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-sm">
+                                                        {r.instruments && <p className="mb-4"><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Instruments :</span></strong> {r.instruments}</p>}
+                                                        {r.note && <p><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Notes :</span></strong> <span className="whitespace-pre-wrap leading-relaxed">{r.note}</span></p>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             );
         }
-
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
