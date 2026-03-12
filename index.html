@@ -1,683 +1,734 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Play, Pause, Trash2, Save, Settings2, ChevronDown, Menu, Disc, RefreshCw, FilePlus, Search, Check, ArrowLeft, Plus, Edit3, Share2, Info, Music, Copy } from 'lucide-react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, serverTimestamp, deleteDoc } from 'firebase/firestore';
-
-// --- CONFIGURATION FIREBASE PERSONNELLE ---
-// Remplacez ces valeurs par celles de votre propre projet Firebase si besoin
-const firebaseConfig = {
-  apiKey: "AIzaSyAaEf6I-5iiYDuw-s_tJJ-35PEoejRr4P8",
-  authDomain: "cercles-rythmiques.firebaseapp.com",
-  projectId: "cercles-rythmiques",
-  storageBucket: "cercles-rythmiques.firebasestorage.app",
-  messagingSenderId: "29649922619",
-  appId: "1:29649922619:web:599ee14f924095c2038a1e",
-  measurementId: "G-V4MN6VLMQ1"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Nom de la collection dans votre base de données Firestore
-const DB_COLLECTION = "rhythms_catalogue";
-
-// --- STYLES SENZALA (Injectés via JS) ---
-const senzalaStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Oswald:wght@500;700&display=swap');
-
-  html, body, #root {
-    min-height: 100vh;
-    background-color: #FFFDF9;
-    color: #1f2937;
-    font-family: 'Manrope', sans-serif;
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  .font-display { font-family: 'Oswald', sans-serif; }
-  .brand-gradient { background: linear-gradient(135deg, #FCB13D 0%, #F7784A 100%); }
-  .brand-shadow { box-shadow: 0 20px 40px -15px rgba(247, 120, 74, 0.3); }
-  .card-hover:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(159, 81, 42, 0.2); }
-  
-  .veneer-title {
-    text-transform: uppercase;
-    letter-spacing: -0.02em;
-    line-height: 0.9;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar { display: none; }
-  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-  .text-brand-yellow { color: #FCB13D; }
-  .text-brand-coral { color: #F7784A; }
-  .text-brand-brown { color: #9F512A; }
-  .text-brand-purple { color: #5E4FDE; }
-
-  .bg-brand-yellow { background-color: #FCB13D; }
-  .bg-brand-coral { background-color: #F7784A; }
-`;
-
-// --- DATA ---
-const SOUND_LIBRARY = {
-    'pandeiro-grave': { name: 'Pandeiro Grave', color: '#be123c' },
-    'pandeiro-slap': { name: 'Pandeiro Slap', color: '#fb7185' },
-    'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#e2e8f0' },
-    'quinto-open': { name: 'Quinto Open', color: '#fdba74' },
-    'quinto-blem': { name: 'Quinto Blem', color: '#c2410c' },
-    'quinto-slap': { name: 'Quinto Slap', color: '#fef3c7' },
-    'conga-open': { name: 'Conga Open', color: '#ea580c' },
-    'conga-blem': { name: 'Conga Blem', color: '#7c2d12' },
-    'conga-slap': { name: 'Conga Slap', color: '#fcd34d' },
-    'agogo-low': { name: 'Agogo Grave', color: '#0e7490' },
-    'agogo-high': { name: 'Agogo Aigu', color: '#22d3ee' },
-    'cowbell': { name: 'Cowbell', color: '#a1a1aa' },
-    'shaker': { name: 'Shaker', color: '#a3a3a3' },
-    'kick': { name: 'Kick Electro', color: '#6366f1' },
-    'snare': { name: 'Snare Electro', color: '#f43f5e' },
-    'hihat': { name: 'Hi-Hat', color: '#10b981' }
-};
-
-// --- MOTEUR AUDIO ---
-const AudioEngine = {
-  ctx: null,
-  init: () => {
-    if (!AudioEngine.ctx) AudioEngine.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
-  },
-  createNoiseBuffer: () => {
-    if (!AudioEngine.ctx) return null;
-    const bufferSize = AudioEngine.ctx.sampleRate * 2.0; 
-    const buffer = AudioEngine.ctx.createBuffer(1, bufferSize, AudioEngine.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-    return buffer;
-  },
-  playTone: (type, time) => {
-    if (!AudioEngine.ctx) return;
-    const ctx = AudioEngine.ctx;
-    const now = time || ctx.currentTime;
-
-    const createOsc = (waveType, freq, start, duration, vol=1) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = waveType; osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(vol, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(start); osc.stop(start + duration);
-    };
-
-    const createNoise = (filterType, filterFreq, duration, vol=1) => {
-        const node = ctx.createBufferSource(); node.buffer = AudioEngine.createNoiseBuffer();
-        const gain = ctx.createGain(); const filter = ctx.createBiquadFilter();
-        filter.type = filterType; filter.frequency.value = filterFreq;
-        node.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-        gain.gain.setValueAtTime(vol, now); gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        node.start(now); node.stop(now + duration);
-    };
-
-    switch (type) {
-        case 'pandeiro-grave': createOsc('sine', 90, now, 0.4, 0.8); break;
-        case 'pandeiro-slap': createOsc('square', 400, now, 0.05, 0.3); createNoise('highpass', 3000, 0.08, 0.5); break;
-        case 'pandeiro-jingle': createNoise('highpass', 3000, 0.15, 0.4); createOsc('square', 6000, now, 0.05, 0.1); break;
-        case 'quinto-open': createOsc('sine', 260, now, 0.35, 0.7); createOsc('sine', 520, now, 0.08, 0.15); break;
-        case 'quinto-blem': createOsc('sine', 280, now, 0.08, 0.7); break;
-        case 'quinto-slap': createOsc('sine', 700, now, 0.04, 0.6); createNoise('highpass', 2500, 0.04, 0.5); break;
-        case 'conga-open': createOsc('sine', 220, now, 0.4, 0.6); break;
-        case 'conga-blem': createOsc('sine', 220, now, 0.1, 0.6); break;
-        case 'conga-slap': createOsc('sine', 500, now, 0.05, 0.5); createNoise('highpass', 2000, 0.05, 0.4); break;
-        case 'agogo-low': createOsc('triangle', 440, now, 0.4, 0.5); break;
-        case 'agogo-high': createOsc('triangle', 587, now, 0.4, 0.5); break;
-        case 'shaker': createNoise('bandpass', 4000, 0.08, 0.2); break;
-        case 'kick': createOsc('sine', 150, now, 0.5, 1); break;
-        case 'snare': createOsc('triangle', 180, now, 0.2, 0.5); createNoise('highpass', 1000, 0.2, 0.5); break;
-        case 'hihat': createNoise('highpass', 5000, 0.05, 0.3); break;
-        default: createOsc('sine', 440, now, 0.1, 0.5);
-    }
-  }
-};
-
-const DEFAULT_TRACKS = [
-    { id: 'pandeiro-grave', steps: new Set([0, 8]) },
-    { id: 'conga-open', steps: new Set([4, 12]) },
-    { id: 'shaker', steps: new Set([2, 6, 10, 14]) }
-];
-
-const INITIAL_FORM = {
-    title: '', family: '', origin: '', instruments: '', note: ''
-};
-
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [view, setView] = useState('list'); // 'list', 'detail', 'form'
-  const [catalog, setCatalog] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFamily, setSelectedFamily] = useState('');
-  const [selectedOrigin, setSelectedOrigin] = useState(''); // NOUVEAU: Filtre Origine
-  
-  // Audio & Sequencer State
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState(100);
-  const [steps, setSteps] = useState(16);
-  const [currentStep, setCurrentStep] = useState(-1);
-  const [tracks, setTracks] = useState(DEFAULT_TRACKS);
-  
-  // Data State
-  const [currentRhythm, setCurrentRhythm] = useState(null);
-  const [formData, setFormData] = useState(INITIAL_FORM);
-  const [isSaving, setIsSaving] = useState(false);
-  const [toast, setToast] = useState("");
-
-  const nextNoteTimeRef = useRef(0);
-  const currentStepRef = useRef(0);
-  const timerIDRef = useRef(null);
-
-  // --- INIT & AUTH ---
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = senzalaStyles;
-    document.head.appendChild(style);
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Carnet de Rythmes - Senzala</title>
     
-    const initAuth = async () => {
-        try {
-            // Connexion anonyme standard pour Firebase Perso
-            await signInAnonymously(auth);
-        } catch (e) {
-            console.error("Firebase Auth Error:", e);
+    <!-- Polices Senzala -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Firebase SDK (Compat Version for standalone HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        html, body, #root {
+            min-height: 100vh;
+            background-color: #FFFDF9;
+            color: #1f2937;
+            font-family: 'Manrope', sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
-    };
-    initAuth();
-    
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => { document.head.removeChild(style); unsubscribe(); };
-  }, []);
+        
+        .font-display { font-family: 'Oswald', sans-serif; }
+        .brand-gradient { background: linear-gradient(135deg, #FCB13D 0%, #F7784A 100%); }
+        .brand-shadow { box-shadow: 0 20px 40px -15px rgba(247, 120, 74, 0.3); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 15px 30px -10px rgba(159, 81, 42, 0.2); }
+        
+        .veneer-title {
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            line-height: 0.9;
+        }
 
-  // --- FETCH DATA ---
-  useEffect(() => {
-    // 🔴 CORRECTION : On a retiré le "if (!user) return;" 
-    // L'application va maintenant toujours essayer de charger la liste,
-    // même si l'authentification anonyme de Firebase n'est pas activée.
-    
-    const q = collection(db, DB_COLLECTION);
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setCatalog(items);
-    }, (error) => {
-        console.error("Erreur de lecture Firestore:", error);
-    });
-    
-    return () => unsubscribe();
-  }, []); // 🔴 CORRECTION : On a retiré "user" des dépendances
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-  // Listes dynamiques pour les filtres et les suggestions (récupère les valeurs uniques de la BDD)
-  const uniqueFamilies = useMemo(() => [...new Set(catalog.map(r => r.family).filter(Boolean))].sort(), [catalog]);
-  const uniqueOrigins = useMemo(() => [...new Set(catalog.map(r => r.origin).filter(Boolean))].sort(), [catalog]);
+        .text-brand-yellow { color: #FCB13D; }
+        .text-brand-coral { color: #F7784A; }
+        .text-brand-brown { color: #9F512A; }
+        .text-brand-purple { color: #5E4FDE; }
 
-  // 🔴 CORRECTION : Sécurisation du filtre de recherche au cas où un rythme n'aurait pas de titre
-  const filteredCatalog = useMemo(() => {
-      return catalog.filter(r => 
-          ((r.title || "").toLowerCase().includes((searchTerm || "").toLowerCase()) || 
-           (r.note || "").toLowerCase().includes((searchTerm || "").toLowerCase())) &&
-          (!selectedFamily || r.family === selectedFamily) &&
-          (!selectedOrigin || r.origin === selectedOrigin)
-      );
-  }, [catalog, searchTerm, selectedFamily, selectedOrigin]);
+        .bg-brand-yellow { background-color: #FCB13D; }
+        .bg-brand-coral { background-color: #F7784A; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-  // --- AUDIO SCHEDULER ---
-  const nextNote = useCallback(() => {
-    const secondsPerBeat = 60.0 / bpm;
-    const stepTime = (secondsPerBeat * 4) / steps; 
-    nextNoteTimeRef.current += stepTime;
-    currentStepRef.current = (currentStepRef.current + 1) % steps;
-  }, [bpm, steps]);
+    <script type="text/babel">
+        // Extraire les hooks React
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-  const scheduleNote = useCallback((stepNumber, time) => {
-    setTimeout(() => setCurrentStep(stepNumber), (time - AudioEngine.ctx.currentTime) * 1000);
-    tracks.forEach(track => {
-        if (track.steps.has(stepNumber)) AudioEngine.playTone(track.id, time);
-    });
-  }, [tracks]);
+        // --- COMPOSANT ICONES (Remplacement de lucide-react) ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            const icons = {
+                Play: <polygon points="5 3 19 12 5 21 5 3"></polygon>,
+                Pause: <><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></>,
+                Trash2: <><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></>,
+                Save: <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></>,
+                Settings2: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>,
+                ChevronDown: <polyline points="6 9 12 15 18 9"></polyline>,
+                Menu: <><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></>,
+                Disc: <><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></>,
+                RefreshCw: <><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>,
+                FilePlus: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></>,
+                Search: <><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></>,
+                ArrowLeft: <><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></>,
+                Plus: <><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></>,
+                Edit3: <><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></>,
+                Share2: <><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></>,
+                Info: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></>,
+                Music: <><path d="M9 18V5l12-2v13M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path></>,
+                Copy: <><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></>
+            };
+            return (
+                <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                    {icons[name]}
+                </svg>
+            );
+        };
 
-  const scheduler = useCallback(() => {
-    if (!AudioEngine.ctx) return;
-    while (nextNoteTimeRef.current < AudioEngine.ctx.currentTime + 0.1) {
-      scheduleNote(currentStepRef.current, nextNoteTimeRef.current);
-      nextNote();
-    }
-    timerIDRef.current = window.setTimeout(scheduler, 25);
-  }, [nextNote, scheduleNote]);
+        // --- CONFIGURATION FIREBASE PERSONNELLE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAaEf6I-5iiYDuw-s_tJJ-35PEoejRr4P8",
+            authDomain: "cercles-rythmiques.firebaseapp.com",
+            projectId: "cercles-rythmiques",
+            storageBucket: "cercles-rythmiques.firebasestorage.app",
+            messagingSenderId: "29649922619",
+            appId: "1:29649922619:web:599ee14f924095c2038a1e",
+            measurementId: "G-V4MN6VLMQ1"
+        };
 
-  useEffect(() => {
-    if (isPlaying) {
-      if (!AudioEngine.ctx) AudioEngine.init();
-      if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
-      currentStepRef.current = -1; 
-      nextNoteTimeRef.current = AudioEngine.ctx.currentTime + 0.05;
-      scheduler();
-    } else {
-      window.clearTimeout(timerIDRef.current);
-      setCurrentStep(-1);
-    }
-    return () => window.clearTimeout(timerIDRef.current);
-  }, [isPlaying, scheduler]);
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
-  const stopAudio = () => {
-      setIsPlaying(false);
-      setCurrentStep(-1);
-  };
+        // Nom de la collection dans votre base de données Firestore
+        const DB_COLLECTION = "rhythms_catalogue";
 
-  // --- NAVIGATION ---
-  const goToList = () => {
-      stopAudio();
-      setView('list');
-  };
+        // --- DATA ---
+        const SOUND_LIBRARY = {
+            'pandeiro-grave': { name: 'Pandeiro Grave', color: '#be123c' },
+            'pandeiro-slap': { name: 'Pandeiro Slap', color: '#fb7185' },
+            'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#e2e8f0' },
+            'quinto-open': { name: 'Quinto Open', color: '#fdba74' },
+            'quinto-blem': { name: 'Quinto Blem', color: '#c2410c' },
+            'quinto-slap': { name: 'Quinto Slap', color: '#fef3c7' },
+            'conga-open': { name: 'Conga Open', color: '#ea580c' },
+            'conga-blem': { name: 'Conga Blem', color: '#7c2d12' },
+            'conga-slap': { name: 'Conga Slap', color: '#fcd34d' },
+            'agogo-low': { name: 'Agogo Grave', color: '#0e7490' },
+            'agogo-high': { name: 'Agogo Aigu', color: '#22d3ee' },
+            'cowbell': { name: 'Cowbell', color: '#a1a1aa' },
+            'shaker': { name: 'Shaker', color: '#a3a3a3' },
+            'kick': { name: 'Kick Electro', color: '#6366f1' },
+            'snare': { name: 'Snare Electro', color: '#f43f5e' },
+            'hihat': { name: 'Hi-Hat', color: '#10b981' }
+        };
 
-  const goToDetail = (item) => {
-      stopAudio();
-      setCurrentRhythm(item);
-      setBpm(item.bpm || 100);
-      setSteps(item.totalSteps || 16);
-      if (item.tracks) setTracks(item.tracks.map(t => ({ id: t.id, steps: new Set(t.steps) })));
-      setView('detail');
-  };
+        const RHYTHM_FAMILIES = ["Samba", "Capoeira", "Maculelê", "Candomblé", "Forró", "Maracatu", "Afro-Brésilien", "Electro", "Autre"];
 
-  const goToForm = (item = null, isCopy = false) => {
-      stopAudio();
-      if (item) {
-          setFormData({ 
-              id: isCopy ? null : item.id, // Si c'est une copie, on enlève l'ID pour forcer une création
-              title: item.title + (isCopy ? " (Copie)" : ""), 
-              family: item.family, 
-              origin: item.origin, 
-              instruments: item.instruments, 
-              note: item.note 
-          });
-          setBpm(item.bpm || 100);
-          setSteps(item.totalSteps || 16);
-          if (item.tracks) setTracks(item.tracks.map(t => ({ id: t.id, steps: new Set(t.steps) })));
-      } else {
-          setFormData(INITIAL_FORM);
-          setBpm(100); setSteps(16); setTracks(DEFAULT_TRACKS.map(t => ({...t, steps: new Set(t.steps)})));
-      }
-      setView('form');
-  };
+        // --- MOTEUR AUDIO ---
+        const AudioEngine = {
+            ctx: null,
+            init: () => {
+                if (!AudioEngine.ctx) AudioEngine.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
+            },
+            createNoiseBuffer: () => {
+                if (!AudioEngine.ctx) return null;
+                const bufferSize = AudioEngine.ctx.sampleRate * 2.0; 
+                const buffer = AudioEngine.ctx.createBuffer(1, bufferSize, AudioEngine.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                return buffer;
+            },
+            playTone: (type, time) => {
+                if (!AudioEngine.ctx) return;
+                const ctx = AudioEngine.ctx;
+                const now = time || ctx.currentTime;
 
-  // --- SAVE / DELETE ---
-  const handleSave = async (e) => {
-      e.preventDefault();
-      
-      // On retire le blocage strict sur "!user" pour éviter les échecs silencieux
-      if (!formData.title.trim()) {
-          setToast("Veuillez entrer un titre.");
-          setTimeout(() => setToast(""), 2500);
-          return;
-      }
-      
-      setIsSaving(true);
-      try {
-          const serializedTracks = tracks.map(t => ({ id: t.id, steps: Array.from(t.steps) }));
-          
-          // Si l'authentification anonyme Firebase n'est pas activée, on utilise un ID par défaut
-          const authorId = user ? user.uid : "utilisateur_local";
+                const createOsc = (waveType, freq, start, duration, vol=1) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = waveType; osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(vol, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(start); osc.stop(start + duration);
+                };
 
-          const dataToSave = {
-              ...formData,
-              tracks: serializedTracks,
-              bpm, totalSteps: steps,
-              authorId: authorId,
-              updatedAt: serverTimestamp()
-          };
+                const createNoise = (filterType, filterFreq, duration, vol=1) => {
+                    const node = ctx.createBufferSource(); node.buffer = AudioEngine.createNoiseBuffer();
+                    const gain = ctx.createGain(); const filter = ctx.createBiquadFilter();
+                    filter.type = filterType; filter.frequency.value = filterFreq;
+                    node.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(vol, now); gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                    node.start(now); node.stop(now + duration);
+                };
 
-          if (formData.id) {
-              await updateDoc(doc(db, DB_COLLECTION, formData.id), dataToSave);
-              setToast("Rythme mis à jour");
-          } else {
-              dataToSave.createdAt = serverTimestamp();
-              await addDoc(collection(db, DB_COLLECTION), dataToSave);
-              setToast("Rythme créé avec succès");
-          }
-          
-          setTimeout(() => setToast(""), 2500);
-          goToList();
-      } catch (e) {
-          console.error("Erreur de sauvegarde Firebase:", e);
-          setToast("Erreur : Vérifiez vos règles Firestore !");
-          setTimeout(() => setToast(""), 3500);
-      } finally {
-          setIsSaving(false);
-      }
-  };
+                switch (type) {
+                    case 'pandeiro-grave': createOsc('sine', 90, now, 0.4, 0.8); break;
+                    case 'pandeiro-slap': createOsc('square', 400, now, 0.05, 0.3); createNoise('highpass', 3000, 0.08, 0.5); break;
+                    case 'pandeiro-jingle': createNoise('highpass', 3000, 0.15, 0.4); createOsc('square', 6000, now, 0.05, 0.1); break;
+                    case 'quinto-open': createOsc('sine', 260, now, 0.35, 0.7); createOsc('sine', 520, now, 0.08, 0.15); break;
+                    case 'quinto-blem': createOsc('sine', 280, now, 0.08, 0.7); break;
+                    case 'quinto-slap': createOsc('sine', 700, now, 0.04, 0.6); createNoise('highpass', 2500, 0.04, 0.5); break;
+                    case 'conga-open': createOsc('sine', 220, now, 0.4, 0.6); break;
+                    case 'conga-blem': createOsc('sine', 220, now, 0.1, 0.6); break;
+                    case 'conga-slap': createOsc('sine', 500, now, 0.05, 0.5); createNoise('highpass', 2000, 0.05, 0.4); break;
+                    case 'agogo-low': createOsc('triangle', 440, now, 0.4, 0.5); break;
+                    case 'agogo-high': createOsc('triangle', 587, now, 0.4, 0.5); break;
+                    case 'shaker': createNoise('bandpass', 4000, 0.08, 0.2); break;
+                    case 'kick': createOsc('sine', 150, now, 0.5, 1); break;
+                    case 'snare': createOsc('triangle', 180, now, 0.2, 0.5); createNoise('highpass', 1000, 0.2, 0.5); break;
+                    case 'hihat': createNoise('highpass', 5000, 0.05, 0.3); break;
+                    default: createOsc('sine', 440, now, 0.1, 0.5);
+                }
+            }
+        };
 
-  const handleDelete = async (id) => {
-      if(!window.confirm("Supprimer ce rythme définitivement ?")) return;
-      try {
-          await deleteDoc(doc(db, DB_COLLECTION, id));
-          goToList();
-      } catch(e) { 
-          console.error("Erreur de suppression:", e); 
-          setToast("Erreur de permission refusée");
-          setTimeout(() => setToast(""), 3000);
-      }
-  };
+        const DEFAULT_TRACKS = [
+            { id: 'pandeiro-grave', steps: new Set([0, 8]) },
+            { id: 'conga-open', steps: new Set([4, 12]) },
+            { id: 'shaker', steps: new Set([2, 6, 10, 14]) }
+        ];
 
-  // --- SEQUENCER ACTIONS ---
-  const toggleStep = (trackIndex, stepIndex) => {
-    if(view === 'detail') return;
-    setTracks(prev => {
-        const newTracks = [...prev];
-        const targetTrack = { ...newTracks[trackIndex] };
-        const newSteps = new Set(targetTrack.steps);
-        if (newSteps.has(stepIndex)) newSteps.delete(stepIndex);
-        else { newSteps.add(stepIndex); if (!isPlaying) AudioEngine.playTone(targetTrack.id); }
-        targetTrack.steps = newSteps;
-        newTracks[trackIndex] = targetTrack;
-        return newTracks;
-    });
-  };
+        const INITIAL_FORM = {
+            title: '', family: '', origin: '', instruments: '', note: ''
+        };
 
-  const changeTrackSound = (trackIndex, soundId) => {
-      setTracks(prev => {
-          const newTracks = [...prev];
-          newTracks[trackIndex] = { ...newTracks[trackIndex], id: soundId };
-          return newTracks;
-      });
-      AudioEngine.playTone(soundId); 
-  };
+        function App() {
+            const [user, setUser] = useState(null);
+            const [view, setView] = useState('list'); // 'list', 'detail', 'form'
+            const [catalog, setCatalog] = useState([]);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedFamily, setSelectedFamily] = useState('');
+            const [selectedOrigin, setSelectedOrigin] = useState(''); 
+            
+            // Audio & Sequencer State
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [bpm, setBpm] = useState(100);
+            const [steps, setSteps] = useState(16);
+            const [currentStep, setCurrentStep] = useState(-1);
+            const [tracks, setTracks] = useState(DEFAULT_TRACKS);
+            
+            // Data State
+            const [currentRhythm, setCurrentRhythm] = useState(null);
+            const [formData, setFormData] = useState(INITIAL_FORM);
+            const [isSaving, setIsSaving] = useState(false);
+            const [toast, setToast] = useState("");
 
-  const addTrack = () => setTracks([...tracks, { id: 'cowbell', steps: new Set() }]);
-  const removeTrack = (idx) => setTracks(tracks.filter((_, i) => i !== idx));
+            const nextNoteTimeRef = useRef(0);
+            const currentStepRef = useRef(0);
+            const timerIDRef = useRef(null);
 
-  // --- SVG RENDERER ---
-  const renderCircle = (size = 320, isEditable = false) => {
-      const center = size / 2;
-      const numTracks = tracks.length;
-      const maxRadius = size/2 - 20; const minRadius = size/4; 
-      const spacing = numTracks > 1 ? (maxRadius - minRadius) / (numTracks - 1) : 0;
+            // --- INIT & AUTH ---
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        await auth.signInAnonymously();
+                    } catch (e) {
+                        console.error("Firebase Auth Error:", e);
+                    }
+                };
+                initAuth();
+                
+                const unsubscribe = auth.onAuthStateChanged(setUser);
+                return () => unsubscribe();
+            }, []);
 
-      return (
-          <div className="relative flex justify-center items-center my-8">
-              <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="touch-none select-none drop-shadow-xl">
-                  {/* Base Circle */}
-                  <circle cx={center} cy={center} r={minRadius - 20} className="fill-[#FFFDF9] stroke-neutral-200" strokeWidth="2" />
-                  <circle cx={center} cy={center} r={10} className="fill-brand-yellow" />
+            // --- FETCH DATA ---
+            useEffect(() => {
+                const q = db.collection(DB_COLLECTION);
+                const unsubscribe = q.onSnapshot((snapshot) => {
+                    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    items.sort((a, b) => {
+                        const dateA = a.createdAt?.seconds || 0;
+                        const dateB = b.createdAt?.seconds || 0;
+                        return dateB - dateA;
+                    });
+                    setCatalog(items);
+                }, (error) => {
+                    console.error("Erreur de lecture Firestore:", error);
+                });
+                
+                return () => unsubscribe();
+            }, []);
 
-                  {/* Tracks */}
-                  {tracks.map((track, trackIdx) => {
-                      const radius = numTracks === 1 ? maxRadius : minRadius + (trackIdx * spacing);
-                      const soundInfo = SOUND_LIBRARY[track.id] || { color: '#94a3b8' };
-                      const hitRadius = Math.min(20, (2 * Math.PI * radius / steps / 2) - 2);
+            const uniqueFamilies = useMemo(() => [...new Set(catalog.map(r => r.family).filter(Boolean))].sort(), [catalog]);
+            const uniqueOrigins = useMemo(() => [...new Set(catalog.map(r => r.origin).filter(Boolean))].sort(), [catalog]);
 
-                      return (
-                          <g key={trackIdx}>
-                              <circle cx={center} cy={center} r={radius} className="stroke-neutral-200 fill-none pointer-events-none" strokeWidth="1" strokeDasharray="4 4" />
-                              {Array.from({length: steps}).map((_, i) => {
-                                  const angle = (i / steps) * 2 * Math.PI - Math.PI / 2;
-                                  const x = center + radius * Math.cos(angle);
-                                  const y = center + radius * Math.sin(angle);
-                                  const isActive = track.steps.has(i);
-                                  const isCurrent = currentStep === i;
-                                  
-                                  return (
-                                      <g key={i} onClick={() => isEditable && toggleStep(trackIdx, i)} className={isEditable ? "cursor-pointer" : ""}>
-                                          {isEditable && <circle cx={x} cy={y} r={hitRadius + 5} className="fill-transparent" />}
-                                          <circle cx={x} cy={y} r={isActive ? 7 : 4} fill={isActive ? soundInfo.color : '#e5e7eb'} 
-                                              className="transition-all duration-75"
-                                              style={{ 
-                                                  stroke: isCurrent ? '#1f2937' : 'none', strokeWidth: isCurrent ? 2 : 0, 
-                                                  opacity: isActive || isCurrent ? 1 : (isEditable ? 0.6 : 0.2) 
-                                              }}
-                                          />
-                                      </g>
-                                  );
-                              })}
-                          </g>
-                      );
-                  })}
+            const filteredCatalog = useMemo(() => {
+                return catalog.filter(r => 
+                    ((r.title || "").toLowerCase().includes((searchTerm || "").toLowerCase()) || 
+                     (r.note || "").toLowerCase().includes((searchTerm || "").toLowerCase())) &&
+                    (!selectedFamily || r.family === selectedFamily) &&
+                    (!selectedOrigin || r.origin === selectedOrigin)
+                );
+            }, [catalog, searchTerm, selectedFamily, selectedOrigin]);
 
-                  {/* Playhead */}
-                  {isPlaying && (
-                      <line x1={center} y1={center} 
-                          x2={center + (maxRadius + 10) * Math.cos((currentStep / steps) * 2 * Math.PI - Math.PI / 2)} 
-                          y2={center + (maxRadius + 10) * Math.sin((currentStep / steps) * 2 * Math.PI - Math.PI / 2)} 
-                          className="stroke-brand-coral/50 pointer-events-none" strokeWidth="3" strokeLinecap="round"
-                      />
-                  )}
-              </svg>
-              
-              {/* Play Button Overlay */}
-              <button 
-                  onClick={(e) => { e.preventDefault(); AudioEngine.init(); setIsPlaying(!isPlaying); }}
-                  className={`absolute z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transform active:scale-95 transition-all ${isPlaying ? 'bg-brand-coral text-white' : 'bg-brand-yellow text-white'}`}
-              >
-                  {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
-              </button>
-          </div>
-      );
-  };
+            // --- AUDIO SCHEDULER ---
+            const nextNote = useCallback(() => {
+                const secondsPerBeat = 60.0 / bpm;
+                const stepTime = (secondsPerBeat * 4) / steps; 
+                nextNoteTimeRef.current += stepTime;
+                currentStepRef.current = (currentStepRef.current + 1) % steps;
+            }, [bpm, steps]);
 
-  return (
-    <>
-        {toast && (
-            <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-neutral-900 text-brand-yellow px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] animate-bounce">
-                {toast}
-            </div>
-        )}
+            const scheduleNote = useCallback((stepNumber, time) => {
+                setTimeout(() => setCurrentStep(stepNumber), (time - AudioEngine.ctx.currentTime) * 1000);
+                tracks.forEach(track => {
+                    if (track.steps.has(stepNumber)) AudioEngine.playTone(track.id, time);
+                });
+            }, [tracks]);
 
-        {/* --- VUE: LISTE (CARNET) --- */}
-        {view === 'list' && (
-            <div className="min-h-screen pb-12">
-                <header className="brand-gradient text-white px-5 py-5 sticky top-0 z-50 brand-shadow">
-                    <div className="max-w-6xl mx-auto flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <div className="bg-white/20 p-2.5 rounded-2xl backdrop-blur-lg shadow-inner text-white"><Music className="w-7 h-7" /></div>
-                            <div>
-                                <h1 className="text-2xl font-display font-bold uppercase leading-none tracking-tight veneer-title text-white">Rythmes</h1>
-                                <span className="text-[10px] font-bold opacity-90 uppercase tracking-[0.2em] block mt-1">Senzala Villefranche</span>
-                            </div>
-                        </div>
-                        <button onClick={() => goToForm()} className="bg-white text-brand-coral px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2">
-                            <Plus size={16}/> Créer
+            const scheduler = useCallback(() => {
+                if (!AudioEngine.ctx) return;
+                while (nextNoteTimeRef.current < AudioEngine.ctx.currentTime + 0.1) {
+                    scheduleNote(currentStepRef.current, nextNoteTimeRef.current);
+                    nextNote();
+                }
+                timerIDRef.current = window.setTimeout(scheduler, 25);
+            }, [nextNote, scheduleNote]);
+
+            useEffect(() => {
+                if (isPlaying) {
+                    if (!AudioEngine.ctx) AudioEngine.init();
+                    if (AudioEngine.ctx.state === 'suspended') AudioEngine.ctx.resume();
+                    currentStepRef.current = -1; 
+                    nextNoteTimeRef.current = AudioEngine.ctx.currentTime + 0.05;
+                    scheduler();
+                } else {
+                    window.clearTimeout(timerIDRef.current);
+                    setCurrentStep(-1);
+                }
+                return () => window.clearTimeout(timerIDRef.current);
+            }, [isPlaying, scheduler]);
+
+            const stopAudio = () => {
+                setIsPlaying(false);
+                setCurrentStep(-1);
+            };
+
+            // --- NAVIGATION ---
+            const goToList = () => {
+                stopAudio();
+                setView('list');
+            };
+
+            const goToDetail = (item) => {
+                stopAudio();
+                setCurrentRhythm(item);
+                setBpm(item.bpm || 100);
+                setSteps(item.totalSteps || 16);
+                if (item.tracks) setTracks(item.tracks.map(t => ({ id: t.id, steps: new Set(t.steps) })));
+                setView('detail');
+            };
+
+            const goToForm = (item = null, isCopy = false) => {
+                stopAudio();
+                if (item) {
+                    setFormData({ 
+                        id: isCopy ? null : item.id, 
+                        title: item.title + (isCopy ? " (Copie)" : ""), 
+                        family: item.family, 
+                        origin: item.origin, 
+                        instruments: item.instruments, 
+                        note: item.note 
+                    });
+                    setBpm(item.bpm || 100);
+                    setSteps(item.totalSteps || 16);
+                    if (item.tracks) setTracks(item.tracks.map(t => ({ id: t.id, steps: new Set(t.steps) })));
+                } else {
+                    setFormData(INITIAL_FORM);
+                    setBpm(100); setSteps(16); setTracks(DEFAULT_TRACKS.map(t => ({...t, steps: new Set(t.steps)})));
+                }
+                setView('form');
+            };
+
+            // --- SAVE / DELETE ---
+            const handleSave = async (e) => {
+                e.preventDefault();
+                
+                if (!formData.title.trim()) {
+                    setToast("Veuillez entrer un titre.");
+                    setTimeout(() => setToast(""), 2500);
+                    return;
+                }
+                
+                setIsSaving(true);
+                try {
+                    const serializedTracks = tracks.map(t => ({ id: t.id, steps: Array.from(t.steps) }));
+                    const authorId = user ? user.uid : "utilisateur_local";
+
+                    const dataToSave = {
+                        ...formData,
+                        tracks: serializedTracks,
+                        bpm, totalSteps: steps,
+                        authorId: authorId,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+
+                    if (formData.id) {
+                        await db.collection(DB_COLLECTION).doc(formData.id).update(dataToSave);
+                        setToast("Rythme mis à jour");
+                    } else {
+                        dataToSave.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                        await db.collection(DB_COLLECTION).add(dataToSave);
+                        setToast("Rythme créé avec succès");
+                    }
+                    
+                    setTimeout(() => setToast(""), 2500);
+                    goToList();
+                } catch (e) {
+                    console.error("Erreur de sauvegarde Firebase:", e);
+                    setToast("Erreur : Vérifiez vos règles Firestore !");
+                    setTimeout(() => setToast(""), 3500);
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            const handleDelete = async (id) => {
+                if(!window.confirm("Supprimer ce rythme définitivement ?")) return;
+                try {
+                    await db.collection(DB_COLLECTION).doc(id).delete();
+                    goToList();
+                } catch(e) { 
+                    console.error("Erreur de suppression:", e); 
+                    setToast("Erreur de permission refusée");
+                    setTimeout(() => setToast(""), 3000);
+                }
+            };
+
+            // --- SEQUENCER ACTIONS ---
+            const toggleStep = (trackIndex, stepIndex) => {
+                if(view === 'detail') return;
+                setTracks(prev => {
+                    const newTracks = [...prev];
+                    const targetTrack = { ...newTracks[trackIndex] };
+                    const newSteps = new Set(targetTrack.steps);
+                    if (newSteps.has(stepIndex)) newSteps.delete(stepIndex);
+                    else { newSteps.add(stepIndex); if (!isPlaying) AudioEngine.playTone(targetTrack.id); }
+                    targetTrack.steps = newSteps;
+                    newTracks[trackIndex] = targetTrack;
+                    return newTracks;
+                });
+            };
+
+            const changeTrackSound = (trackIndex, soundId) => {
+                setTracks(prev => {
+                    const newTracks = [...prev];
+                    newTracks[trackIndex] = { ...newTracks[trackIndex], id: soundId };
+                    return newTracks;
+                });
+                AudioEngine.playTone(soundId); 
+            };
+
+            const addTrack = () => setTracks([...tracks, { id: 'cowbell', steps: new Set() }]);
+            const removeTrack = (idx) => setTracks(tracks.filter((_, i) => i !== idx));
+
+            // --- SVG RENDERER ---
+            const renderCircle = (size = 320, isEditable = false) => {
+                const center = size / 2;
+                const numTracks = tracks.length;
+                const maxRadius = size/2 - 20; const minRadius = size/4; 
+                const spacing = numTracks > 1 ? (maxRadius - minRadius) / (numTracks - 1) : 0;
+
+                return (
+                    <div className="relative flex justify-center items-center my-8">
+                        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="touch-none select-none drop-shadow-xl">
+                            {/* Base Circle */}
+                            <circle cx={center} cy={center} r={minRadius - 20} className="fill-[#FFFDF9] stroke-neutral-200" strokeWidth="2" />
+                            <circle cx={center} cy={center} r={10} className="fill-brand-yellow" />
+
+                            {/* Tracks */}
+                            {tracks.map((track, trackIdx) => {
+                                const radius = numTracks === 1 ? maxRadius : minRadius + (trackIdx * spacing);
+                                const soundInfo = SOUND_LIBRARY[track.id] || { color: '#94a3b8' };
+                                const hitRadius = Math.min(20, (2 * Math.PI * radius / steps / 2) - 2);
+
+                                return (
+                                    <g key={trackIdx}>
+                                        <circle cx={center} cy={center} r={radius} className="stroke-neutral-200 fill-none pointer-events-none" strokeWidth="1" strokeDasharray="4 4" />
+                                        {Array.from({length: steps}).map((_, i) => {
+                                            const angle = (i / steps) * 2 * Math.PI - Math.PI / 2;
+                                            const x = center + radius * Math.cos(angle);
+                                            const y = center + radius * Math.sin(angle);
+                                            const isActive = track.steps.has(i);
+                                            const isCurrent = currentStep === i;
+                                            
+                                            return (
+                                                <g key={i} onClick={() => isEditable && toggleStep(trackIdx, i)} className={isEditable ? "cursor-pointer" : ""}>
+                                                    {isEditable && <circle cx={x} cy={y} r={hitRadius + 5} className="fill-transparent" />}
+                                                    <circle cx={x} cy={y} r={isActive ? 7 : 4} fill={isActive ? soundInfo.color : '#e5e7eb'} 
+                                                        className="transition-all duration-75"
+                                                        style={{ 
+                                                            stroke: isCurrent ? '#1f2937' : 'none', strokeWidth: isCurrent ? 2 : 0, 
+                                                            opacity: isActive || isCurrent ? 1 : (isEditable ? 0.6 : 0.2) 
+                                                        }}
+                                                    />
+                                                </g>
+                                            );
+                                        })}
+                                    </g>
+                                );
+                            })}
+
+                            {/* Playhead */}
+                            {isPlaying && (
+                                <line x1={center} y1={center} 
+                                    x2={center + (maxRadius + 10) * Math.cos((currentStep / steps) * 2 * Math.PI - Math.PI / 2)} 
+                                    y2={center + (maxRadius + 10) * Math.sin((currentStep / steps) * 2 * Math.PI - Math.PI / 2)} 
+                                    className="stroke-brand-coral/50 pointer-events-none" strokeWidth="3" strokeLinecap="round"
+                                />
+                            )}
+                        </svg>
+                        
+                        {/* Play Button Overlay */}
+                        <button 
+                            onClick={(e) => { e.preventDefault(); AudioEngine.init(); setIsPlaying(!isPlaying); }}
+                            className={`absolute z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transform active:scale-95 transition-all ${isPlaying ? 'bg-brand-coral text-white' : 'bg-brand-yellow text-white'}`}
+                        >
+                            {isPlaying ? <Icon name="Pause" size={28} /> : <Icon name="Play" size={28} className="ml-1" />}
                         </button>
                     </div>
-                </header>
+                );
+            };
 
-                <main className="max-w-6xl mx-auto p-4 md:p-10">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-[2.5rem] shadow-sm border border-neutral-100 mb-8">
-                        <div className="md:col-span-6 relative">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-yellow w-5 h-5" />
-                            <input type="text" placeholder="Rechercher un rythme..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-neutral-50 border-none outline-none focus:ring-4 focus:ring-brand-yellow/10 font-medium text-base transition-all" />
-                        </div>
-                        <div className="md:col-span-3">
-                            <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-neutral-50 border-none font-bold text-brand-brown text-xs uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none text-center">
-                                <option value="">Toutes Familles</option>
-                                {uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
-                        </div>
-                        <div className="md:col-span-3">
-                            <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-neutral-50 border-none font-bold text-brand-purple text-xs uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none text-center">
-                                <option value="">Toutes Origines</option>
-                                {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    {filteredCatalog.length === 0 ? (
-                        <div className="text-center text-neutral-400 py-20 font-bold uppercase tracking-widest text-sm">Aucun rythme trouvé</div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredCatalog.map(r => (
-                                <div key={r.id} onClick={() => goToDetail(r)} className="bg-white p-8 rounded-[3rem] shadow-sm border-2 border-transparent hover:border-brand-yellow/30 transition-all cursor-pointer flex flex-col h-full card-hover">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <span className="px-3 py-1 bg-brand-yellow/10 text-brand-brown text-[9px] font-black uppercase tracking-[0.2em] rounded-lg border border-brand-yellow/20">{r.family || 'Général'}</span>
-                                        <span className="text-[10px] font-mono text-neutral-400 font-bold bg-neutral-50 px-2 py-1 rounded">{r.bpm} BPM</span>
-                                    </div>
-                                    <h3 className="text-2xl font-display font-bold text-neutral-800 uppercase leading-[1] mb-2 veneer-title tracking-tight">{r.title}</h3>
-                                    {r.origin && <p className="text-xs font-bold text-brand-coral uppercase tracking-widest mb-4 opacity-80">{r.origin}</p>}
-                                    <div className="mt-auto flex gap-1 pt-4">
-                                        {(r.tracks || []).slice(0,5).map((t, i) => (
-                                            <div key={i} className="flex-1 h-1.5 rounded-full" style={{backgroundColor: SOUND_LIBRARY[t.id]?.color || '#cbd5e1'}}></div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
+            return (
+                <>
+                    {toast && (
+                        <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-neutral-900 text-brand-yellow px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] animate-bounce">
+                            {toast}
                         </div>
                     )}
-                </main>
-            </div>
-        )}
 
-        {/* --- VUE: PLAQUETTE (DETAIL) --- */}
-        {view === 'detail' && currentRhythm && (
-            <div className="min-h-screen pb-12">
-                <div className="max-w-4xl mx-auto md:mt-10 bg-white md:rounded-[4rem] shadow-2xl border border-neutral-100 overflow-hidden min-h-screen md:min-h-0">
-                    <div className="p-8 md:p-14 border-b-8 border-brand-yellow/10 bg-neutral-50/40 relative">
-                        <button onClick={goToList} className="absolute top-6 left-6 p-3 bg-white rounded-full shadow-sm text-brand-brown hover:scale-105 transition-transform"><ArrowLeft size={20}/></button>
-                        
-                        <div className="text-center mt-6">
-                            <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
-                                {currentRhythm.family && <span className="px-4 py-1.5 bg-brand-coral text-white text-[10px] font-black uppercase rounded-xl shadow-md tracking-widest">{currentRhythm.family}</span>}
-                                {currentRhythm.origin && <span className="px-4 py-1.5 bg-white text-brand-brown border border-neutral-200 text-[10px] font-black uppercase rounded-xl shadow-sm">{currentRhythm.origin}</span>}
-                            </div>
-                            <h2 className="text-5xl md:text-7xl font-display font-bold text-neutral-900 uppercase tracking-tighter mb-2 veneer-title leading-none">{currentRhythm.title}</h2>
-                        </div>
-                        
-                        <div className="absolute top-6 right-6 flex gap-2">
-                            <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white text-brand-yellow rounded-xl shadow-sm hover:bg-brand-yellow/10 transition-colors" title="Copier (Dupliquer)"><Copy size={18}/></button>
-                            <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white text-brand-purple rounded-xl shadow-sm hover:bg-brand-purple/5 transition-colors" title="Modifier"><Edit3 size={18}/></button>
-                            <button onClick={() => handleDelete(currentRhythm.id)} className="p-3 bg-white text-neutral-300 hover:text-red-500 rounded-xl shadow-sm transition-colors" title="Supprimer"><Trash2 size={18}/></button>
-                        </div>
-                    </div>
-
-                    <div className="p-6 md:p-14 flex flex-col items-center">
-                        <div className="w-full flex flex-col items-center mb-12 bg-white p-6 rounded-[3rem] shadow-sm border border-neutral-100">
-                            {renderCircle(window.innerWidth < 400 ? 280 : 360, false)}
-                            
-                            <div className="flex items-center gap-6 mt-4 bg-neutral-50 px-6 py-3 rounded-2xl border border-neutral-100">
-                                <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Tempo</span>
-                                <input type="range" min="60" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-32 accent-brand-coral"/>
-                                <span className="font-mono font-bold text-brand-coral w-8 text-right">{bpm}</span>
-                            </div>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-8 w-full">
-                            {currentRhythm.instruments && (
-                                <section className="bg-brand-yellow/5 p-8 rounded-[2.5rem] border border-brand-yellow/10">
-                                    <h4 className="text-[11px] font-black text-brand-yellow mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Disc size={16}/> Instruments</h4>
-                                    <p className="font-bold text-neutral-800 leading-relaxed">{currentRhythm.instruments}</p>
-                                </section>
-                            )}
-                            {currentRhythm.note && (
-                                <section className="bg-brand-purple/5 p-8 rounded-[2.5rem] border border-brand-purple/10 md:col-span-2">
-                                    <h4 className="text-[11px] font-black text-brand-purple mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Info size={16}/> Commentaires & Histoire</h4>
-                                    <p className="font-medium text-neutral-700 leading-relaxed whitespace-pre-wrap">{currentRhythm.note}</p>
-                                </section>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
-
-        {/* --- VUE: FORMULAIRE (CREATION/EDITION) --- */}
-        {view === 'form' && (
-            <div className="min-h-screen pb-12 bg-neutral-100">
-                <div className="max-w-4xl mx-auto bg-white md:mt-10 md:rounded-[4rem] shadow-2xl overflow-hidden">
-                    
-                    <div className="bg-neutral-50 p-8 md:p-10 border-b border-neutral-200 flex justify-between items-center sticky top-0 z-20">
-                        <h2 className="text-3xl font-display font-bold text-brand-coral uppercase veneer-title leading-none">{formData.id ? 'Éditer le rythme' : 'Nouveau Rythme'}</h2>
-                        <button onClick={goToList} className="text-neutral-400 hover:text-brand-brown p-2"><ArrowLeft size={28} /></button>
-                    </div>
-
-                    <form onSubmit={handleSave} className="p-6 md:p-10 space-y-12">
-                        
-                        <div className="space-y-6">
-                            <div>
-                                <label className="text-[10px] font-black text-brand-brown uppercase mb-2 block tracking-widest">Nom du rythme *</label>
-                                <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-neutral-50 rounded-[2rem] font-display font-bold text-2xl outline-none focus:ring-4 focus:ring-brand-yellow/20 border border-neutral-200 uppercase veneer-title" placeholder="Ex: Ijexá..." />
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Famille</label>
-                                    <input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-xs uppercase border border-neutral-200 outline-none" placeholder="Ex: Samba..." />
-                                    <datalist id="family-suggestions">
-                                        {uniqueFamilies.map(t => <option key={t} value={t} />)}
-                                    </datalist>
+                    {/* --- VUE: LISTE (CARNET) --- */}
+                    {view === 'list' && (
+                        <div className="min-h-screen pb-12">
+                            <header className="brand-gradient text-white px-5 py-5 sticky top-0 z-50 brand-shadow">
+                                <div className="max-w-6xl mx-auto flex justify-between items-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="bg-white/20 p-2.5 rounded-2xl backdrop-blur-lg shadow-inner text-white"><Icon name="Music" size={28} /></div>
+                                        <div>
+                                            <h1 className="text-2xl font-display font-bold uppercase leading-none tracking-tight veneer-title text-white">Rythmes</h1>
+                                            <span className="text-[10px] font-bold opacity-90 uppercase tracking-[0.2em] block mt-1">Senzala Villefranche</span>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => goToForm()} className="bg-white text-brand-coral px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2">
+                                        <Icon name="Plus" size={16}/> Créer
+                                    </button>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Origine</label>
-                                    <input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-xs uppercase border border-neutral-200 outline-none" placeholder="Ex: Bahia..." />
-                                    <datalist id="origin-suggestions">
-                                        {uniqueOrigins.map(o => <option key={o} value={o} />)}
-                                    </datalist>
+                            </header>
+
+                            <main className="max-w-6xl mx-auto p-4 md:p-10">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white p-4 rounded-[2.5rem] shadow-sm border border-neutral-100 mb-8">
+                                    <div className="md:col-span-6 relative">
+                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-yellow"><Icon name="Search" size={20} /></div>
+                                        <input type="text" placeholder="Rechercher un rythme..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-neutral-50 border-none outline-none focus:ring-4 focus:ring-brand-yellow/10 font-medium text-base transition-all" />
+                                    </div>
+                                    <div className="md:col-span-3">
+                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-neutral-50 border-none font-bold text-brand-brown text-xs uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none text-center">
+                                            <option value="">Toutes Familles</option>
+                                            {uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="md:col-span-3">
+                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="w-full px-6 py-4 rounded-2xl bg-neutral-50 border-none font-bold text-brand-purple text-xs uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none text-center">
+                                            <option value="">Toutes Origines</option>
+                                            {uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {filteredCatalog.length === 0 ? (
+                                    <div className="text-center text-neutral-400 py-20 font-bold uppercase tracking-widest text-sm">Aucun rythme trouvé</div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredCatalog.map(r => (
+                                            <div key={r.id} onClick={() => goToDetail(r)} className="bg-white p-8 rounded-[3rem] shadow-sm border-2 border-transparent hover:border-brand-yellow/30 transition-all cursor-pointer flex flex-col h-full card-hover">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <span className="px-3 py-1 bg-brand-yellow/10 text-brand-brown text-[9px] font-black uppercase tracking-[0.2em] rounded-lg border border-brand-yellow/20">{r.family || 'Général'}</span>
+                                                    <span className="text-[10px] font-mono text-neutral-400 font-bold bg-neutral-50 px-2 py-1 rounded">{r.bpm} BPM</span>
+                                                </div>
+                                                <h3 className="text-2xl font-display font-bold text-neutral-800 uppercase leading-[1] mb-2 veneer-title tracking-tight">{r.title}</h3>
+                                                {r.origin && <p className="text-xs font-bold text-brand-coral uppercase tracking-widest mb-4 opacity-80">{r.origin}</p>}
+                                                <div className="mt-auto flex gap-1 pt-4">
+                                                    {(r.tracks || []).slice(0,5).map((t, i) => (
+                                                        <div key={i} className="flex-1 h-1.5 rounded-full" style={{backgroundColor: SOUND_LIBRARY[t.id]?.color || '#cbd5e1'}}></div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </main>
+                        </div>
+                    )}
+
+                    {/* --- VUE: PLAQUETTE (DETAIL) --- */}
+                    {view === 'detail' && currentRhythm && (
+                        <div className="min-h-screen pb-12">
+                            <div className="max-w-4xl mx-auto md:mt-10 bg-white md:rounded-[4rem] shadow-2xl border border-neutral-100 overflow-hidden min-h-screen md:min-h-0">
+                                <div className="p-8 md:p-14 border-b-8 border-brand-yellow/10 bg-neutral-50/40 relative">
+                                    <button onClick={goToList} className="absolute top-6 left-6 p-3 bg-white rounded-full shadow-sm text-brand-brown hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
+                                    
+                                    <div className="text-center mt-6">
+                                        <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+                                            {currentRhythm.family && <span className="px-4 py-1.5 bg-brand-coral text-white text-[10px] font-black uppercase rounded-xl shadow-md tracking-widest">{currentRhythm.family}</span>}
+                                            {currentRhythm.origin && <span className="px-4 py-1.5 bg-white text-brand-brown border border-neutral-200 text-[10px] font-black uppercase rounded-xl shadow-sm">{currentRhythm.origin}</span>}
+                                        </div>
+                                        <h2 className="text-5xl md:text-7xl font-display font-bold text-neutral-900 uppercase tracking-tighter mb-2 veneer-title leading-none">{currentRhythm.title}</h2>
+                                    </div>
+                                    
+                                    <div className="absolute top-6 right-6 flex gap-2">
+                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white text-brand-yellow rounded-xl shadow-sm hover:bg-brand-yellow/10 transition-colors" title="Copier (Dupliquer)"><Icon name="Copy" size={18}/></button>
+                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white text-brand-purple rounded-xl shadow-sm hover:bg-brand-purple/5 transition-colors" title="Modifier"><Icon name="Edit3" size={18}/></button>
+                                        <button onClick={() => handleDelete(currentRhythm.id)} className="p-3 bg-white text-neutral-300 hover:text-red-500 rounded-xl shadow-sm transition-colors" title="Supprimer"><Icon name="Trash2" size={18}/></button>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 md:p-14 flex flex-col items-center">
+                                    <div className="w-full flex flex-col items-center mb-12 bg-white p-6 rounded-[3rem] shadow-sm border border-neutral-100">
+                                        {renderCircle(window.innerWidth < 400 ? 280 : 360, false)}
+                                        
+                                        <div className="flex items-center gap-6 mt-4 bg-neutral-50 px-6 py-3 rounded-2xl border border-neutral-100">
+                                            <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Tempo</span>
+                                            <input type="range" min="60" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-32 accent-brand-coral"/>
+                                            <span className="font-mono font-bold text-brand-coral w-8 text-right">{bpm}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid md:grid-cols-2 gap-8 w-full">
+                                        {currentRhythm.instruments && (
+                                            <section className="bg-brand-yellow/5 p-8 rounded-[2.5rem] border border-brand-yellow/10">
+                                                <h4 className="text-[11px] font-black text-brand-yellow mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4>
+                                                <p className="font-bold text-neutral-800 leading-relaxed">{currentRhythm.instruments}</p>
+                                            </section>
+                                        )}
+                                        {currentRhythm.note && (
+                                            <section className="bg-brand-purple/5 p-8 rounded-[2.5rem] border border-brand-purple/10 md:col-span-2">
+                                                <h4 className="text-[11px] font-black text-brand-purple mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Info" size={16}/> Commentaires & Histoire</h4>
+                                                <p className="font-medium text-neutral-700 leading-relaxed whitespace-pre-wrap">{currentRhythm.note}</p>
+                                            </section>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        <div className="border-t-4 border-brand-yellow/20 pt-10">
-                            <h3 className="text-xl font-display font-bold text-brand-yellow uppercase mb-6 veneer-title flex items-center gap-2"><Settings2 size={24}/> Studio Interactif</h3>
-                            
-                            <div className="bg-neutral-50 rounded-[3rem] p-6 border border-neutral-200 flex flex-col items-center">
-                                {renderCircle(window.innerWidth < 400 ? 280 : 340, true)}
+                    {/* --- VUE: FORMULAIRE (CREATION/EDITION) --- */}
+                    {view === 'form' && (
+                        <div className="min-h-screen pb-12 bg-neutral-100">
+                            <div className="max-w-4xl mx-auto bg-white md:mt-10 md:rounded-[4rem] shadow-2xl overflow-hidden">
                                 
-                                <div className="w-full grid grid-cols-2 gap-4 mt-8">
-                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 flex flex-col items-center">
-                                        <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Tempo ({bpm})</span>
-                                        <input type="range" min="60" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full accent-brand-coral"/>
-                                    </div>
-                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 flex flex-col items-center">
-                                        <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Divisions</span>
-                                        <div className="flex gap-1">
-                                            {[8, 12, 16, 24].map(s => (
-                                                <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); setTracks(tracks.map(t=>({...t, steps:new Set()})))}} className={`px-2 py-1 rounded text-[10px] font-bold ${steps===s ? 'bg-brand-brown text-white' : 'bg-neutral-100 text-neutral-500'}`}>{s}</button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                <div className="bg-neutral-50 p-8 md:p-10 border-b border-neutral-200 flex justify-between items-center sticky top-0 z-20">
+                                    <h2 className="text-3xl font-display font-bold text-brand-coral uppercase veneer-title leading-none">{formData.id ? 'Éditer le rythme' : 'Nouveau Rythme'}</h2>
+                                    <button onClick={goToList} className="text-neutral-400 hover:text-brand-brown p-2"><Icon name="ArrowLeft" size={28} /></button>
                                 </div>
 
-                                <div className="w-full mt-6 space-y-2">
-                                    {tracks.map((track, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-neutral-100">
-                                            <div className="w-3 h-3 rounded-full ml-2" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
-                                            <select value={track.id} onChange={(e) => changeTrackSound(idx, e.target.value)} className="flex-1 bg-transparent text-xs font-bold p-2 outline-none appearance-none cursor-pointer">
-                                                {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (
-                                                    <option key={key} value={key}>{lib.name}</option>
+                                <form onSubmit={handleSave} className="p-6 md:p-10 space-y-12">
+                                    
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="text-[10px] font-black text-brand-brown uppercase mb-2 block tracking-widest">Nom du rythme *</label>
+                                            <input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-neutral-50 rounded-[2rem] font-display font-bold text-2xl outline-none focus:ring-4 focus:ring-brand-yellow/20 border border-neutral-200 uppercase veneer-title" placeholder="Ex: Ijexá..." />
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Famille</label>
+                                                <input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-xs uppercase border border-neutral-200 outline-none" placeholder="Ex: Samba..." />
+                                                <datalist id="family-suggestions">
+                                                    {uniqueFamilies.map(t => <option key={t} value={t} />)}
+                                                </datalist>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Origine</label>
+                                                <input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-xs uppercase border border-neutral-200 outline-none" placeholder="Ex: Bahia..." />
+                                                <datalist id="origin-suggestions">
+                                                    {uniqueOrigins.map(o => <option key={o} value={o} />)}
+                                                </datalist>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="border-t-4 border-brand-yellow/20 pt-10">
+                                        <h3 className="text-xl font-display font-bold text-brand-yellow uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={24}/> Studio Interactif</h3>
+                                        
+                                        <div className="bg-neutral-50 rounded-[3rem] p-6 border border-neutral-200 flex flex-col items-center">
+                                            {renderCircle(window.innerWidth < 400 ? 280 : 340, true)}
+                                            
+                                            <div className="w-full grid grid-cols-2 gap-4 mt-8">
+                                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 flex flex-col items-center">
+                                                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Tempo ({bpm})</span>
+                                                    <input type="range" min="60" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full accent-brand-coral"/>
+                                                </div>
+                                                <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-100 flex flex-col items-center">
+                                                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest mb-2">Divisions</span>
+                                                    <div className="flex gap-1">
+                                                        {[8, 12, 16, 24].map(s => (
+                                                            <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); setTracks(tracks.map(t=>({...t, steps:new Set()})))}} className={`px-2 py-1 rounded text-[10px] font-bold ${steps===s ? 'bg-brand-brown text-white' : 'bg-neutral-100 text-neutral-500'}`}>{s}</button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full mt-6 space-y-2">
+                                                {tracks.map((track, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-neutral-100">
+                                                        <div className="w-3 h-3 rounded-full ml-2" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
+                                                        <select value={track.id} onChange={(e) => changeTrackSound(idx, e.target.value)} className="flex-1 bg-transparent text-xs font-bold p-2 outline-none appearance-none cursor-pointer">
+                                                            {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (
+                                                                <option key={key} value={key}>{lib.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <button type="button" onClick={() => removeTrack(idx)} className="p-2 text-neutral-300 hover:text-red-500"><Icon name="Trash2" size={16}/></button>
+                                                    </div>
                                                 ))}
-                                            </select>
-                                            <button type="button" onClick={() => removeTrack(idx)} className="p-2 text-neutral-300 hover:text-red-500"><Trash2 size={16}/></button>
+                                                {tracks.length < 6 && (
+                                                    <button type="button" onClick={addTrack} className="w-full py-3 border-2 border-dashed border-neutral-300 rounded-2xl text-xs font-bold text-neutral-500 uppercase tracking-widest hover:border-brand-coral hover:text-brand-coral transition-colors flex justify-center items-center gap-2">
+                                                        <Icon name="Plus" size={14}/> Ajouter un son
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                    ))}
-                                    {tracks.length < 6 && (
-                                        <button type="button" onClick={addTrack} className="w-full py-3 border-2 border-dashed border-neutral-300 rounded-2xl text-xs font-bold text-neutral-500 uppercase tracking-widest hover:border-brand-coral hover:text-brand-coral transition-colors flex justify-center items-center gap-2">
-                                            <Plus size={14}/> Ajouter un son
+                                    </div>
+
+                                    <div className="space-y-6 border-t-4 border-brand-purple/20 pt-10">
+                                        <div>
+                                            <label className="text-[10px] font-black text-brand-purple uppercase mb-2 block tracking-widest">Instruments recommandés (Texte)</label>
+                                            <input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-sm border border-neutral-200 outline-none" placeholder="Ex: 3 Atabaques, 1 Agogo..." />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Commentaires / Instructions</label>
+                                            <textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-5 bg-neutral-50 rounded-[2rem] font-medium text-sm border border-neutral-200 outline-none resize-none" placeholder="Comment jouer ce rythme..." />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-8">
+                                        <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-6 rounded-[2.5rem] font-black shadow-xl uppercase text-[14px] tracking-[0.2em] active:scale-95 transition-transform flex justify-center items-center gap-3 disabled:opacity-50">
+                                            {isSaving ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : <Icon name="Save" size={20}/>}
+                                            Sauvegarder dans le carnet
                                         </button>
-                                    )}
-                                </div>
+                                    </div>
+                                </form>
                             </div>
                         </div>
+                    )}
+                </>
+            );
+        }
 
-                        <div className="space-y-6 border-t-4 border-brand-purple/20 pt-10">
-                            <div>
-                                <label className="text-[10px] font-black text-brand-purple uppercase mb-2 block tracking-widest">Instruments recommandés (Texte)</label>
-                                <input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 bg-neutral-50 rounded-[1.5rem] font-bold text-sm border border-neutral-200 outline-none" placeholder="Ex: 3 Atabaques, 1 Agogo..." />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-black text-neutral-400 uppercase mb-2 block tracking-widest">Commentaires / Instructions</label>
-                                <textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-5 bg-neutral-50 rounded-[2rem] font-medium text-sm border border-neutral-200 outline-none resize-none" placeholder="Comment jouer ce rythme..." />
-                            </div>
-                        </div>
-
-                        <div className="pt-8">
-                            <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-6 rounded-[2.5rem] font-black shadow-xl uppercase text-[14px] tracking-[0.2em] active:scale-95 transition-transform flex justify-center items-center gap-3 disabled:opacity-50">
-                                {isSaving ? <RefreshCw className="animate-spin" size={20}/> : <Save size={20}/>}
-                                Sauvegarder dans le carnet
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        )}
-    </>
-  );
-}
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
