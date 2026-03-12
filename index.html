@@ -76,10 +76,7 @@
                 Info: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></>,
                 Disc: <><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></>,
                 Music: <><path d="M9 18V5l12-2v13M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path></>,
-                RefreshCw: <><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>,
-                Volume2: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></>,
-                VolumeX: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></>,
-                Settings2: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>
+                RefreshCw: <><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -283,17 +280,36 @@
                 return result;
             }, [catalog, searchTerm, selectedFamily, selectedOrigin, sortBy]);
 
+            // --- NOUVELLE FONCTION : TOUT SÉLECTIONNER ---
+            // Vérifie si tous les éléments affichés sont dans la liste des sélectionnés
+            const allDisplayedSelected = displayCatalog.length > 0 && displayCatalog.every(r => selectedRhythms.includes(r.id));
+            
+            const toggleSelectAll = () => {
+                if (allDisplayedSelected) {
+                    // Désélectionner tous ceux qui sont affichés
+                    const displayedIds = displayCatalog.map(r => r.id);
+                    setSelectedRhythms(prev => prev.filter(id => !displayedIds.includes(id)));
+                } else {
+                    // Sélectionner tous ceux qui sont affichés
+                    const displayedIds = displayCatalog.map(r => r.id);
+                    setSelectedRhythms(prev => [...new Set([...prev, ...displayedIds])]);
+                }
+            };
+
             const nextNote = useCallback(() => {
                 const stepTime = (60.0 / bpm * 4) / steps;
+                let delay = 0;
+                if (currentStepRef.current % 2 === 0) delay = (swing / 100) * (stepTime * 0.5);
                 nextNoteTimeRef.current += stepTime;
                 currentStepRef.current = (currentStepRef.current + 1) % steps;
-            }, [bpm, steps]);
+                return delay;
+            }, [bpm, steps, swing]);
 
             const scheduleNote = useCallback((stepNumber, time) => {
                 setTimeout(() => setCurrentStep(stepNumber), (time - AudioEngine.ctx.currentTime) * 1000);
                 tracks.forEach(track => { 
                     const hit = track.steps?.[stepNumber] || (Array.isArray(track.steps) && track.steps.includes(stepNumber) ? 1 : 0);
-                    if (hit > 0 && !track.muted) AudioEngine.playTone(track.id, time, track.volume || 1, hit === 2); 
+                    if (hit > 0) AudioEngine.playTone(track.id, time, 1, hit === 2); 
                 });
             }, [tracks]);
 
@@ -331,8 +347,7 @@
                     stopAudio(); setCurrentRhythm(item); setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
                     setTracks(item.tracks.map(t => ({
                         id: t.id, 
-                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}),
-                        volume: t.volume || 1, muted: !!t.muted 
+                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {})
                     })));
                     setView('detail'); setPreviewId(null);
                 }
@@ -352,13 +367,12 @@
                     setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
                     setTracks(item.tracks.map(t => ({
                         id: t.id, 
-                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}),
-                        volume: t.volume || 1, muted: !!t.muted 
+                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {})
                     })));
                 } else {
                     setFormData({ title: '', family: '', origin: '', instruments: '', note: '' });
                     setBpm(100); setSteps(16); setSwing(0);
-                    setTracks([{ id: 'pandeiro-grave', steps: {0: 1, 8: 1}, volume: 1, muted: false }]);
+                    setTracks([{ id: 'pandeiro-grave', steps: {0: 1, 8: 1} }]);
                 }
                 setView('form'); setPreviewId(null);
             };
@@ -371,7 +385,7 @@
                 else {
                     stopAudio(); 
                     setCurrentRhythm(item); setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
-                    setTracks(item.tracks.map(t => ({ id: t.id, steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}), volume: 1, muted: false })));
+                    setTracks(item.tracks.map(t => ({ id: t.id, steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}) })));
                     setPreviewId(item.id); 
                     setTimeout(() => setIsPlaying(true), 50); 
                 }
@@ -393,7 +407,7 @@
                     const { id, ...dataToSave } = formData;
                     const data = { 
                         ...dataToSave, 
-                        tracks: tracks.map(t => ({ id: t.id, steps: t.steps, volume: t.volume || 1, muted: !!t.muted })), 
+                        tracks: tracks.map(t => ({ id: t.id, steps: t.steps })), 
                         bpm, swing, totalSteps: steps, 
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
                     };
@@ -491,9 +505,6 @@
                 );
             };
 
-            const changeTrackVol = (idx, v) => setTracks(prev => { const nt = [...prev]; nt[idx] = { ...nt[idx], volume: parseFloat(v) }; return nt; });
-            const toggleMute = (idx) => setTracks(prev => { const nt = [...prev]; nt[idx] = { ...nt[idx], muted: !nt[idx].muted }; return nt; });
-
             return (
                 <div className="animate-in pb-10 text-left">
                     {toast && <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] border border-slate-700">{toast}</div>}
@@ -515,40 +526,59 @@
 
                     {view === 'list' && (
                         <div className="min-h-screen">
-                            <header className="brand-gradient text-white px-6 py-6 sticky top-0 z-50 shadow-xl flex justify-between items-center">
-                                <div className="flex items-center gap-4 cursor-pointer" onClick={() => {setView('list'); setIsSelectionMode(false);}}>
-                                    <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md shadow-inner text-white border border-white/20"><Icon name="Music" size={28} /></div>
-                                    <div><h1 className="text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase">Senzala Studio</span></div>
+                            <header className="brand-gradient text-white px-4 sm:px-6 py-6 sticky top-0 z-50 shadow-xl flex justify-between items-center no-print">
+                                <div className="flex items-center gap-3 sm:gap-4 cursor-pointer" onClick={() => {setView('list'); setIsSelectionMode(false);}}>
+                                    <div className="bg-white/10 p-2 sm:p-2.5 rounded-2xl backdrop-blur-md shadow-inner text-white border border-white/20"><Icon name="Music" size={24} /></div>
+                                    <div><h1 className="text-2xl sm:text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[9px] sm:text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase">Senzala Studio</span></div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`px-4 py-2.5 rounded-2xl font-bold text-[11px] uppercase transition-all hidden sm:flex items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}><Icon name="Printer" size={16}/> {isSelectionMode ? 'Annuler' : 'Livret PDF'}</button>
-                                    <button onClick={() => goToForm()} className="bg-white text-blue-700 px-6 py-2.5 rounded-2xl font-bold text-[11px] uppercase shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center gap-2"><Icon name="Plus" size={16}/> Créer</button>
+                                    <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`px-3 sm:px-4 py-2.5 rounded-2xl font-bold text-[10px] sm:text-[11px] uppercase transition-all flex items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                                        <Icon name="Printer" size={16}/> 
+                                        <span className="hidden sm:inline">{isSelectionMode ? 'Annuler' : 'Livret PDF'}</span>
+                                        <span className="sm:hidden">{isSelectionMode ? 'Annuler' : 'PDF'}</span>
+                                    </button>
+                                    <button onClick={() => goToForm()} className="bg-white text-blue-700 px-4 sm:px-6 py-2.5 rounded-2xl font-bold text-[10px] sm:text-[11px] uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2">
+                                        <Icon name="Plus" size={16}/> Créer
+                                    </button>
                                 </div>
                             </header>
                             
-                            <main className="max-w-6xl mx-auto p-4 md:p-10 space-y-8">
-                                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-center">
-                                    <div className="w-full xl:flex-1 relative"><div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" /></div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full xl:w-auto">
-                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="px-4 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-[11px] uppercase tracking-widest outline-none border border-slate-100"><option value="">Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
-                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="px-4 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-[11px] uppercase tracking-widest outline-none border border-slate-100"><option value="">Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
-                                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="px-4 py-4 rounded-2xl bg-slate-50 font-bold text-blue-600 text-[11px] uppercase tracking-widest outline-none border border-slate-200">
+                            {/* BARRE DE SÉLECTION PDF */}
+                            {isSelectionMode && (
+                                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-lg bg-slate-900 p-2 sm:p-3 rounded-full flex justify-between items-center shadow-2xl z-50 animate-in border border-slate-700 no-print gap-2">
+                                    <button onClick={toggleSelectAll} className={`flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-2 rounded-full transition-colors whitespace-nowrap ${allDisplayedSelected ? 'bg-slate-700 text-white' : 'bg-white/10 text-white/90 hover:text-white hover:bg-white/20'}`}>
+                                        <Icon name="Check" size={14} className={allDisplayedSelected ? "text-blue-400" : "opacity-50"} />
+                                        {allDisplayedSelected ? 'Tout décocher' : 'Tout cocher'}
+                                    </button>
+                                    
+                                    <span className="text-white font-bold px-1 text-[10px] sm:text-xs whitespace-nowrap truncate">{selectedRhythms.length} sélec.</span>
+                                    
+                                    <button onClick={() => { stopAudio(); setView('print'); }} disabled={selectedRhythms.length === 0} className="bg-blue-600 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-[10px] sm:text-xs uppercase disabled:opacity-50 hover:bg-blue-500 transition-colors flex items-center gap-2 shrink-0">
+                                        <Icon name="Printer" size={14}/> <span className="hidden sm:inline">Générer</span>
+                                    </button>
+                                </div>
+                            )}
+                            
+                            <main className="max-w-6xl mx-auto p-4 md:p-10 space-y-8 no-print">
+                                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
+                                    <div className="w-full md:flex-1 relative"><div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" /></div>
+                                    <div className="grid grid-cols-2 md:flex gap-4 w-full md:w-auto">
+                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="px-3 sm:px-4 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100"><option value="">Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
+                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="px-3 sm:px-4 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100"><option value="">Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
+                                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="col-span-2 md:col-span-1 px-3 sm:px-4 py-4 rounded-2xl bg-slate-50 font-bold text-blue-600 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-200">
                                             <option value="latest">Nouveautés</option>
                                             <option value="alpha">A - Z</option>
                                             <option value="family">Par Famille</option>
                                         </select>
-                                        <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`xl:hidden px-4 py-4 rounded-2xl font-bold text-[10px] uppercase transition-all flex justify-center items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                                            <Icon name="Printer" size={14}/> {isSelectionMode ? 'Off' : 'PDF'}
-                                        </button>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {displayCatalog.map(r => {
                                         const isThisPreviewPlaying = previewId === r.id && isPlaying;
                                         return (
-                                            <div key={r.id} onClick={() => handleCardClick(r)} className={`bg-white p-8 rounded-[2.5rem] shadow-sm border-2 transition-all cursor-pointer flex flex-col h-full card-hover animate-in relative group overflow-hidden ${isSelectionMode && selectedRhythms.includes(r.id) ? 'border-blue-500 bg-blue-50/50 scale-[0.98]' : 'border-transparent hover:border-blue-300'}`}>
+                                            <div key={r.id} onClick={() => handleCardClick(r)} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all cursor-pointer flex flex-col h-full card-hover animate-in relative group overflow-hidden ${isSelectionMode && selectedRhythms.includes(r.id) ? 'border-blue-500 bg-blue-50/50 scale-[0.98]' : 'border-transparent hover:border-blue-300'}`}>
                                                 <div className="flex justify-between items-start mb-6">
-                                                    <span className="bg-white text-slate-600 shadow-sm border border-slate-200 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{r.family || 'Général'}</span>
+                                                    <span className="bg-white text-slate-600 shadow-sm border border-slate-200 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest">{r.family || 'Général'}</span>
                                                     {isSelectionMode ? (
                                                         <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${selectedRhythms.includes(r.id) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 border-slate-300 text-transparent'}`}><Icon name="Check" size={16}/></div>
                                                     ) : (
@@ -557,10 +587,8 @@
                                                         </button>
                                                     )}
                                                 </div>
-                                                <div className="flex justify-center mb-8 bg-slate-100/50 rounded-full p-4 border border-slate-200 w-full overflow-hidden">
-                                                    {renderMiniCircle(r)}
-                                                </div>
-                                                <div className="text-center mt-auto"><h3 className="text-2xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none">{r.title}</h3>{r.origin && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{r.origin}</p>}</div>
+                                                <div className="flex justify-center mb-6 bg-slate-50/50 rounded-full p-4 border border-slate-100">{renderMiniCircle(r)}</div>
+                                                <div className="text-center mt-auto"><h3 className="text-xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none">{r.title}</h3>{r.origin && <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">{r.origin}</p>}</div>
                                             </div>
                                         );
                                     })}
@@ -570,69 +598,41 @@
                     )}
 
                     {view === 'detail' && currentRhythm && (
-                        <div className="min-h-screen pb-12 animate-in">
+                        <div className="min-h-screen pb-12 animate-in no-print">
                             <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden">
-                                <div className="p-8 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center">
-                                    <button onClick={goToList} className="absolute top-6 left-6 p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
-                                    <div className="flex justify-center gap-3 mb-6 mt-4 flex-wrap">
-                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{currentRhythm.family}</span>}
-                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{currentRhythm.origin}</span>}
+                                <div className="p-6 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center">
+                                    <button onClick={goToList} className="absolute top-4 sm:top-6 left-4 sm:left-6 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
+                                    <div className="flex justify-center gap-2 mb-4 mt-6">
+                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{currentRhythm.family}</span>}
+                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{currentRhythm.origin}</span>}
                                     </div>
-                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none sm:px-10">{currentRhythm.title}</h2>
-                                    <div className="absolute top-6 right-6 flex gap-2">
-                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors hidden sm:block" title="Copier"><Icon name="Copy" size={18}/></button>
-                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors" title="Modifier"><Icon name="Edit3" size={18}/></button>
-                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors hidden sm:block" title="Supprimer"><Icon name="Trash2" size={18}/></button>
+                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none px-4">{currentRhythm.title}</h2>
+                                    
+                                    <div className="flex justify-center sm:absolute sm:top-6 sm:right-6 gap-2 mt-6 sm:mt-0">
+                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors hidden sm:block" title="Copier"><Icon name="Copy" size={16}/></button>
+                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors" title="Modifier"><Icon name="Edit3" size={16}/></button>
+                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors hidden sm:block" title="Supprimer"><Icon name="Trash2" size={16}/></button>
                                     </div>
                                 </div>
-                                <div className="p-6 md:p-12 flex flex-col items-center bg-white">
-                                    <div className="w-full grid lg:grid-cols-12 gap-8 lg:gap-12 items-start mb-12">
-                                        <div className="lg:col-span-7 flex flex-col items-center bg-slate-50 p-6 sm:p-8 rounded-[3rem] shadow-inner border border-slate-100 w-full overflow-hidden">
-                                            {/* Fixed logical size, SVG adapts via CSS */}
+                                <div className="p-4 md:p-12 flex flex-col items-center">
+                                    <div className="w-full grid lg:grid-cols-12 gap-8 items-start mb-8">
+                                        <div className="lg:col-span-7 flex flex-col items-center bg-slate-50 p-4 sm:p-8 rounded-[2.5rem] shadow-inner border border-slate-100">
                                             {renderCircle(tracks, steps, 360, false, true)}
-                                            <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full">
-                                                <div className="flex-1 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
-                                                    <div className="flex justify-between text-[11px] font-black uppercase text-slate-500 mb-3"><span>Tempo</span><span className="text-blue-600">{bpm} BPM</span></div>
+                                            <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full">
+                                                <div className="flex-1 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
+                                                    <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3"><span>Tempo</span><span className="text-blue-600">{bpm} BPM</span></div>
                                                     <input type="range" min="40" max="200" value={bpm} onChange={e => setBpm(Number(e.target.value))} className="w-full" />
                                                 </div>
-                                                <div className="flex-1 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
-                                                    <div className="flex justify-between text-[11px] font-black uppercase text-slate-500 mb-3"><span>Swing (Ginga)</span><span className="text-orange-500">{swing}%</span></div>
+                                                <div className="flex-1 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
+                                                    <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3"><span>Swing</span><span className="text-orange-500">{swing}%</span></div>
                                                     <input type="range" min="0" max="100" value={swing} onChange={e => setSwing(Number(e.target.value))} className="w-full" style={{accentColor: '#f97316'}} />
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="lg:col-span-5 space-y-4 w-full">
-                                            <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2 bg-slate-100 p-3 rounded-xl inline-flex"><Icon name="Settings2" size={16}/> Mixeur</h4>
-                                            <div className="space-y-3">
-                                                {tracks.map((track, idx) => {
-                                                    const trackColor = SOUND_LIBRARY[track.id]?.color; 
-                                                    return (
-                                                        <div key={idx} className={`p-4 rounded-2xl flex items-center gap-4 transition-all border ${track.muted ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-200 shadow-sm'}`}>
-                                                            <div className="w-4 h-4 rounded-full shadow-inner shrink-0" style={{backgroundColor: trackColor}}></div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="text-[11px] font-bold text-slate-700 uppercase mb-2 truncate">{SOUND_LIBRARY[track.id]?.name}</div>
-                                                                <input type="range" min="0" max="1" step="0.1" value={track.volume} onChange={(e) => changeTrackVol(idx, e.target.value)} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer" style={{accentColor: trackColor}} />
-                                                            </div>
-                                                            <button onClick={() => toggleMute(idx)} className={`p-3 rounded-xl transition-colors shrink-0 ${track.muted ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><Icon name={track.muted ? "VolumeX" : "Volume2"} size={18} /></button>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
                                     </div>
-                                    <div className="grid md:grid-cols-2 gap-8 w-full">
-                                        {currentRhythm.instruments && (
-                                            <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200">
-                                                <h4 className="text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4>
-                                                <p className="font-bold text-slate-800 leading-relaxed">{currentRhythm.instruments}</p>
-                                            </section>
-                                        )}
-                                        {currentRhythm.note && (
-                                            <section className="bg-blue-50 p-8 rounded-[2.5rem] border border-blue-100 md:col-span-2">
-                                                <h4 className="text-[11px] font-black text-blue-600 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Info" size={16}/> Commentaires & Pédagogie</h4>
-                                                <p className="font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">{currentRhythm.note}</p>
-                                            </section>
-                                        )}
+                                    <div className="grid md:grid-cols-2 gap-6 w-full">
+                                        {currentRhythm.instruments && (<section className="bg-slate-50 p-6 sm:p-8 rounded-[2rem] border border-slate-200"><h4 className="text-[10px] sm:text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4><p className="font-bold text-slate-800 leading-relaxed text-sm">{currentRhythm.instruments}</p></section>)}
+                                        {currentRhythm.note && (<section className="bg-blue-50 p-6 sm:p-8 rounded-[2rem] border border-blue-100 md:col-span-2"><h4 className="text-[10px] sm:text-[11px] font-black text-blue-600 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Info" size={16}/> Pédagogie</h4><p className="font-medium text-slate-700 leading-relaxed whitespace-pre-wrap text-sm">{currentRhythm.note}</p></section>)}
                                     </div>
                                 </div>
                             </div>
@@ -640,79 +640,74 @@
                     )}
 
                     {view === 'form' && (
-                        <div className="min-h-screen pb-12 bg-slate-100 animate-in">
+                        <div className="min-h-screen pb-12 bg-slate-100 animate-in no-print">
                             <div className="max-w-5xl mx-auto bg-white md:mt-10 md:rounded-[3rem] shadow-2xl overflow-hidden">
-                                <div className="bg-slate-50 p-8 md:p-10 border-b border-slate-200 flex justify-between items-center sticky top-0 z-20">
-                                    <h2 className="text-3xl font-display font-bold text-slate-800 uppercase veneer-title leading-none">{formData.id ? 'Éditer' : 'Nouveau'}</h2>
-                                    <div className="flex items-center gap-3">
-                                        <button type="button" onClick={clearAllNotes} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-widest shadow-sm transition-colors hidden sm:flex items-center gap-2"><Icon name="Trash2" size={16} /> Vider le cercle</button>
-                                        <button type="button" onClick={goToList} className="text-slate-400 hover:text-slate-800 p-2 transition-colors bg-white rounded-full shadow-sm border border-slate-200"><Icon name="ArrowLeft" size={24} /></button>
+                                <div className="bg-slate-50 p-6 md:p-10 border-b border-slate-200 flex justify-between items-center sticky top-0 z-20">
+                                    <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-800 uppercase veneer-title leading-none truncate pr-4">{formData.id ? 'Éditer' : 'Nouveau'}</h2>
+                                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                        <button type="button" onClick={clearAllNotes} className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-widest shadow-sm transition-colors flex items-center gap-2">
+                                            <Icon name="Trash2" size={16} /> 
+                                            <span className="hidden sm:inline">Vider le cercle</span>
+                                            <span className="sm:hidden">Vider</span>
+                                        </button>
+                                        <button type="button" onClick={goToList} className="text-slate-400 hover:text-slate-800 p-2 transition-colors bg-white rounded-full shadow-sm border border-slate-200"><Icon name="ArrowLeft" size={20} /></button>
                                     </div>
                                 </div>
-                                <form onSubmit={handleSave} className="p-6 md:p-12 space-y-12 w-full">
+                                <form onSubmit={handleSave} className="p-4 sm:p-6 md:p-12 space-y-8 sm:space-y-12">
                                     <div className="space-y-6">
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Nom du rythme *</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-2xl sm:text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title" placeholder="EX: IJEXÁ..." /></div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Famille</label><input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="family-suggestions">{uniqueFamilies.map(t => <option key={t} value={t} />)}</datalist></div>
-                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Origine</label><input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="origin-suggestions">{uniqueOrigins.map(o => <option key={o} value={o} />)}</datalist></div>
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Nom du rythme *</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-2xl sm:text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title" placeholder="EX: IJEXÁ..." /></div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Famille</label><input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-xs sm:text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="family-suggestions">{uniqueFamilies.map(t => <option key={t} value={t} />)}</datalist></div>
+                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Origine</label><input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-xs sm:text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="origin-suggestions">{uniqueOrigins.map(o => <option key={o} value={o} />)}</datalist></div>
                                         </div>
                                     </div>
                                     <div className="pt-8 border-t border-slate-200">
-                                        <h3 className="text-xl font-display font-bold text-slate-800 uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={24}/> Studio Interactif</h3>
+                                        <h3 className="text-lg sm:text-xl font-display font-bold text-slate-800 uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={20}/> Studio Interactif</h3>
                                         <div className="grid lg:grid-cols-12 gap-8">
-                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2.5rem] p-4 sm:p-6 border border-slate-200 flex flex-col items-center shadow-inner overflow-hidden w-full">
-                                                {/* Use consistent logical size for form view, SVG adapts via CSS */}
+                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-6 border border-slate-200 flex flex-col items-center shadow-inner overflow-hidden w-full">
                                                 {renderCircle(tracks, steps, 360, true, true)}
-                                                <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Tempo ({bpm})</span>
+                                                
+                                                <div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-6">
+                                                    <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Tempo</span>
+                                                        <span className="text-[10px] font-bold text-blue-600 mb-1">{bpm}</span>
                                                         <input type="range" min="40" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full"/>
                                                     </div>
-                                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center text-orange-500">Swing ({swing}%)</span>
+                                                    <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-orange-500">Swing</span>
+                                                        <span className="text-[10px] font-bold text-orange-500 mb-1">{swing}%</span>
                                                         <input type="range" min="0" max="100" value={swing} onChange={(e) => setSwing(Number(e.target.value))} className="w-full" style={{accentColor: '#f97316'}}/>
                                                     </div>
-                                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Divisions</span>
+                                                    <div className="col-span-2 sm:col-span-1 bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Divisions</span>
                                                         <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                                                            {[8, 12, 16, 24].map(s => (
-                                                                <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); clearAllNotes();}} className={`px-2 py-1 sm:px-2.5 rounded text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>
-                                                            ))}
+                                                            {[8, 12, 16, 24].map(s => (<button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); clearAllNotes();}} className={`px-2 py-1 rounded text-[10px] sm:text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>))}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="lg:col-span-5 space-y-3 w-full">
-                                                <div className="bg-blue-50 text-blue-700 text-xs p-4 rounded-xl border border-blue-100 font-medium mb-6">💡 <strong>Astuce :</strong> Cliquez plusieurs fois sur un point pour marquer un <strong>accent fort</strong>.</div>
+                                            <div className="lg:col-span-5 space-y-3">
+                                                <div className="bg-blue-50 text-blue-700 text-[10px] sm:text-xs p-3 sm:p-4 rounded-xl border border-blue-100 font-medium mb-4 sm:mb-6 leading-relaxed">💡 <strong>Astuce :</strong> Cliquez plusieurs fois sur un point pour marquer un <strong>accent fort</strong>.</div>
                                                 {tracks.map((track, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 sm:gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200">
-                                                        <div className="w-4 h-4 rounded-full shadow-inner ml-2 shrink-0" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
+                                                    <div key={idx} className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
+                                                        <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full shadow-inner ml-2 shrink-0" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
                                                         <select value={track.id} onChange={(e) => { const nt = [...tracks]; nt[idx].id = e.target.value; setTracks(nt); AudioEngine.playTone(e.target.value); }} className="flex-1 bg-transparent text-[11px] sm:text-[13px] font-bold py-2 outline-none cursor-pointer border-none text-slate-700 w-full min-w-0">
                                                             {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (<option key={key} value={key}>{lib.name}</option>))}
                                                         </select>
-                                                        <button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-xl shrink-0" title="Supprimer piste"><Icon name="Trash2" size={18}/></button>
+                                                        <button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-lg sm:rounded-xl shrink-0" title="Supprimer piste"><Icon name="Trash2" size={16}/></button>
                                                     </div>
                                                 ))}
-                                                {tracks.length < 8 && (
-                                                    <button type="button" onClick={() => setTracks([...tracks, { id: 'shaker', steps: {}, volume: 1, muted: false }])} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-2xl text-xs font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 flex justify-center items-center gap-2 mt-4">
-                                                        <Icon name="Plus" size={16}/> Ajouter instrument
-                                                    </button>
-                                                )}
+                                                {tracks.length < 8 && (<button type="button" onClick={() => setTracks([...tracks, { id: 'shaker', steps: {}, volume: 1, muted: false }])} className="w-full py-3 sm:py-4 border-2 border-dashed border-slate-300 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 flex justify-center items-center gap-2 mt-4"><Icon name="Plus" size={14}/> Ajouter instrument</button>)}
                                             </div>
                                         </div>
                                     </div>
                                     <div className="space-y-6 pt-8 border-t border-slate-200">
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Instruments recommandés</label><input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-medium text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Commentaires / Pédagogie</label><textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-medium text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Instruments recommandés</label><input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Commentaires / Pédagogie</label><textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
                                     </div>
-                                    <div className="pt-6 flex flex-col sm:flex-row gap-4">
-                                        {formData.id && (
-                                            <button type="button" onClick={() => setShowConfirmDelete(formData.id)} className="w-full sm:w-auto px-8 py-6 bg-red-50 text-red-600 rounded-[2rem] font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex justify-center items-center gap-2">
-                                                <Icon name="Trash2" size={18}/> Supprimer
-                                            </button>
-                                        )}
-                                        <button type="submit" disabled={isSaving || !formData.title} className="flex-1 brand-gradient text-white py-6 rounded-[2rem] font-black shadow-xl uppercase text-[15px] tracking-[0.2em] active:scale-[0.98] flex justify-center items-center gap-3 disabled:opacity-50">
-                                            {isSaving ? <Icon name="RefreshCw" size={22} className="animate-spin" /> : <Icon name="Save" size={22}/>} Sauvegarder
+                                    <div className="pt-6">
+                                        <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-4 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] font-black shadow-xl uppercase text-[13px] sm:text-[15px] tracking-[0.2em] active:scale-[0.98] flex justify-center items-center gap-3 disabled:opacity-50">
+                                            {isSaving ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : <Icon name="Save" size={20}/>} Sauvegarder
                                         </button>
                                     </div>
                                 </form>
@@ -721,25 +716,45 @@
                     )}
 
                     {view === 'print' && (
-                        <div className="bg-white min-h-screen text-slate-900 font-sans p-8 md:p-16">
-                            <div className="no-print flex gap-4 mb-12 justify-center"><button onClick={() => setView('list')} className="px-6 py-2 border-2 border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors uppercase tracking-widest text-slate-600">Fermer</button><button onClick={() => window.print()} className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 flex items-center gap-2"><Icon name="Printer" size={16}/> Imprimer PDF</button></div>
+                        <div className="bg-white min-h-screen text-slate-900 font-sans p-4 sm:p-8 md:p-16">
+                            <div className="no-print flex flex-col sm:flex-row gap-4 mb-8 sm:mb-12 justify-center">
+                                <button onClick={() => setView('list')} className="px-6 py-3 border-2 border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors uppercase tracking-widest text-slate-600">Fermer / Annuler</button>
+                                <button onClick={() => window.print()} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 flex justify-center items-center gap-2"><Icon name="Printer" size={16}/> Imprimer ou Enregistrer en PDF</button>
+                            </div>
                             <div className="max-w-4xl mx-auto">
-                                <div className="text-center border-b-4 border-slate-200 pb-8 mb-12"><h1 className="text-5xl font-display font-bold uppercase tracking-tight veneer-title mb-2 text-slate-900">Carnet de Rythmes</h1><p className="text-sm font-bold text-slate-500 tracking-[0.3em] uppercase">Senzala Villefranche</p></div>
-                                <div className="mb-16 bg-slate-50 p-8 rounded-3xl border border-slate-200 break-inside-avoid">
-                                    <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2"><Icon name="Disc" size={18}/> Légende des instruments</h2>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
-                                        {legendSounds.map(([key, lib]) => (<div key={key} className="flex items-center gap-3"><div className="w-5 h-5 rounded-full border border-slate-300 shadow-sm shrink-0" style={{backgroundColor: lib.color}}></div><span className="text-xs font-bold uppercase text-slate-700 truncate">{lib.name}</span></div>))}
-                                    </div>
-                                    <div className="mt-8 pt-4 border-t border-slate-200 flex gap-6 text-xs font-medium text-slate-500"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-400"></div> Note Normale</span><span className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-slate-400 ring-2 ring-slate-800"></div> Note Accentuée</span></div>
+                                <div className="text-center border-b-4 border-slate-200 pb-6 sm:pb-8 mb-8 sm:mb-12">
+                                    <h1 className="text-3xl sm:text-5xl font-display font-bold uppercase tracking-tight veneer-title mb-2 text-slate-900">Carnet de Rythmes</h1>
+                                    <p className="text-[10px] sm:text-sm font-bold text-slate-500 tracking-[0.3em] uppercase">Senzala Villefranche</p>
                                 </div>
-                                <div className="space-y-24">
+                                <div className="mb-12 sm:mb-16 bg-slate-50 p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 break-inside-avoid">
+                                    <h2 className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2"><Icon name="Disc" size={18}/> Légende des instruments</h2>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-4 sm:gap-x-8">
+                                        {legendSounds.map(([key, lib]) => (<div key={key} className="flex items-center gap-2 sm:gap-3"><div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-slate-300 shadow-sm shrink-0" style={{backgroundColor: lib.color}}></div><span className="text-[10px] sm:text-xs font-bold uppercase text-slate-700 truncate">{lib.name}</span></div>))}
+                                    </div>
+                                    <div className="mt-8 pt-4 border-t border-slate-200 flex gap-6 text-[10px] sm:text-xs font-medium text-slate-500"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-400"></div> Note Normale</span><span className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-slate-400 ring-2 ring-slate-800"></div> Note Accentuée</span></div>
+                                </div>
+                                <div className="space-y-16 sm:space-y-24">
                                     {catalog.filter(r => selectedRhythms.includes(r.id)).map(r => {
                                         const printTracks = (r.tracks || []).map(t => ({ id: t.id, steps: t.steps }));
                                         return (
                                             <div key={r.id} className="page-break">
-                                                <div className="text-center mb-8"><h3 className="text-4xl font-display font-bold uppercase mb-3 veneer-title text-slate-900">{r.title}</h3><div className="flex justify-center items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{r.family && <span className="bg-slate-100 px-3 py-1 rounded">{r.family}</span>}{r.origin && <span>• {r.origin}</span>}<span>• {r.bpm} BPM</span></div></div>
-                                                <div className="flex justify-center mb-8">{renderCircle(printTracks, r.totalSteps || 16, 450, false, false)}</div>
-                                                {(r.instruments || r.note) && (<div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-sm"><p className="mb-4"><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Instruments :</span></strong> {r.instruments}</p><p><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Notes :</span></strong> <span className="whitespace-pre-wrap leading-relaxed">{r.note}</span></p></div>)}
+                                                <div className="text-center mb-6 sm:mb-8">
+                                                    <h3 className="text-3xl sm:text-4xl font-display font-bold uppercase mb-2 sm:mb-3 veneer-title text-slate-900">{r.title}</h3>
+                                                    <div className="flex justify-center items-center gap-2 sm:gap-3 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex-wrap">
+                                                        {r.family && <span className="bg-slate-100 px-3 py-1 rounded">{r.family}</span>}
+                                                        {r.origin && <span>• {r.origin}</span>}
+                                                        <span>• {r.bpm} BPM</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-center mb-8">
+                                                    {renderCircle(printTracks, r.totalSteps || 16, 400, false, false)}
+                                                </div>
+                                                {(r.instruments || r.note) && (
+                                                    <div className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 text-xs sm:text-sm">
+                                                        {r.instruments && <p className="mb-3 sm:mb-4"><strong><span className="uppercase text-[9px] sm:text-[10px] tracking-widest text-slate-500 block mb-1">Instruments :</span></strong> {r.instruments}</p>}
+                                                        {r.note && <p><strong><span className="uppercase text-[9px] sm:text-[10px] tracking-widest text-slate-500 block mb-1">Notes :</span></strong> <span className="whitespace-pre-wrap leading-relaxed">{r.note}</span></p>}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
