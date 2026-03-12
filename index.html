@@ -296,6 +296,15 @@
                 }
             };
 
+            const legendSounds = useMemo(() => {
+                if (view !== 'print') return [];
+                const usedIds = new Set();
+                catalog.filter(r => selectedRhythms.includes(r.id)).forEach(r => {
+                    (r.tracks || []).forEach(t => usedIds.add(t.id));
+                });
+                return Object.entries(SOUND_LIBRARY).filter(([id, _]) => usedIds.has(id));
+            }, [view, catalog, selectedRhythms]);
+
             const nextNote = useCallback(() => {
                 const stepTime = (60.0 / bpm * 4) / steps;
                 let delay = 0;
@@ -730,8 +739,13 @@
                                         <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Instruments recommandés</label><input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
                                         <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Commentaires / Pédagogie</label><textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
                                     </div>
-                                    <div className="pt-6">
-                                        <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-4 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] font-black shadow-xl uppercase text-[13px] sm:text-[15px] tracking-[0.2em] active:scale-[0.98] flex justify-center items-center gap-3 disabled:opacity-50">
+                                    <div className="pt-6 flex flex-col sm:flex-row gap-4">
+                                        {formData.id && (
+                                            <button type="button" onClick={() => setShowConfirmDelete(formData.id)} className="w-full sm:w-auto px-8 py-6 bg-red-50 text-red-600 rounded-[2rem] font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex justify-center items-center gap-2">
+                                                <Icon name="Trash2" size={18}/> Supprimer
+                                            </button>
+                                        )}
+                                        <button type="submit" disabled={isSaving || !formData.title} className="flex-1 brand-gradient text-white py-4 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] font-black shadow-xl uppercase text-[13px] sm:text-[15px] tracking-[0.2em] active:scale-[0.98] flex justify-center items-center gap-3 disabled:opacity-50">
                                             {isSaving ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : <Icon name="Save" size={20}/>} Sauvegarder
                                         </button>
                                     </div>
