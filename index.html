@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Carnet de Rythmes - Senzala</title>
+    <title>Carnet de Rythmes - Flecha</title>
     
-    <!-- Polices Senzala -->
+    <!-- Polices Flecha -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;800&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
@@ -45,7 +45,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
         input[type="range"] { accent-color: #2563eb; }
-        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; -webkit-appearance: none; appearance: none; }
+        select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.2em 1.2em; padding-right: 2.5rem !important; -webkit-appearance: none; appearance: none; }
 
         @media print {
             .no-print { display: none !important; }
@@ -76,7 +76,11 @@
                 Info: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></>,
                 Disc: <><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></>,
                 Music: <><path d="M9 18V5l12-2v13M6 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm12-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path></>,
-                RefreshCw: <><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>
+                RefreshCw: <><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></>,
+                AlertCircle: <><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></>,
+                Volume2: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></>,
+                VolumeX: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></>,
+                Settings2: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -280,17 +284,13 @@
                 return result;
             }, [catalog, searchTerm, selectedFamily, selectedOrigin, sortBy]);
 
-            // --- NOUVELLE FONCTION : TOUT SÉLECTIONNER ---
-            // Vérifie si tous les éléments affichés sont dans la liste des sélectionnés
             const allDisplayedSelected = displayCatalog.length > 0 && displayCatalog.every(r => selectedRhythms.includes(r.id));
             
             const toggleSelectAll = () => {
                 if (allDisplayedSelected) {
-                    // Désélectionner tous ceux qui sont affichés
                     const displayedIds = displayCatalog.map(r => r.id);
                     setSelectedRhythms(prev => prev.filter(id => !displayedIds.includes(id)));
                 } else {
-                    // Sélectionner tous ceux qui sont affichés
                     const displayedIds = displayCatalog.map(r => r.id);
                     setSelectedRhythms(prev => [...new Set([...prev, ...displayedIds])]);
                 }
@@ -309,7 +309,7 @@
                 setTimeout(() => setCurrentStep(stepNumber), (time - AudioEngine.ctx.currentTime) * 1000);
                 tracks.forEach(track => { 
                     const hit = track.steps?.[stepNumber] || (Array.isArray(track.steps) && track.steps.includes(stepNumber) ? 1 : 0);
-                    if (hit > 0) AudioEngine.playTone(track.id, time, 1, hit === 2); 
+                    if (hit > 0 && !track.muted) AudioEngine.playTone(track.id, time, track.volume || 1, hit === 2); 
                 });
             }, [tracks]);
 
@@ -347,7 +347,8 @@
                     stopAudio(); setCurrentRhythm(item); setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
                     setTracks(item.tracks.map(t => ({
                         id: t.id, 
-                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {})
+                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}),
+                        volume: t.volume || 1, muted: !!t.muted 
                     })));
                     setView('detail'); setPreviewId(null);
                 }
@@ -367,12 +368,13 @@
                     setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
                     setTracks(item.tracks.map(t => ({
                         id: t.id, 
-                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {})
+                        steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}),
+                        volume: t.volume || 1, muted: !!t.muted 
                     })));
                 } else {
                     setFormData({ title: '', family: '', origin: '', instruments: '', note: '' });
                     setBpm(100); setSteps(16); setSwing(0);
-                    setTracks([{ id: 'pandeiro-grave', steps: {0: 1, 8: 1} }]);
+                    setTracks([{ id: 'pandeiro-grave', steps: {0: 1, 8: 1}, volume: 1, muted: false }]);
                 }
                 setView('form'); setPreviewId(null);
             };
@@ -385,7 +387,7 @@
                 else {
                     stopAudio(); 
                     setCurrentRhythm(item); setBpm(item.bpm || 100); setSteps(item.totalSteps || 16); setSwing(item.swing || 0);
-                    setTracks(item.tracks.map(t => ({ id: t.id, steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}) })));
+                    setTracks(item.tracks.map(t => ({ id: t.id, steps: Array.isArray(t.steps) ? t.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (t.steps || {}), volume: 1, muted: false })));
                     setPreviewId(item.id); 
                     setTimeout(() => setIsPlaying(true), 50); 
                 }
@@ -407,7 +409,7 @@
                     const { id, ...dataToSave } = formData;
                     const data = { 
                         ...dataToSave, 
-                        tracks: tracks.map(t => ({ id: t.id, steps: t.steps })), 
+                        tracks: tracks.map(t => ({ id: t.id, steps: t.steps, volume: t.volume || 1, muted: !!t.muted })), 
                         bpm, swing, totalSteps: steps, 
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
                     };
@@ -505,15 +507,18 @@
                 );
             };
 
+            const changeTrackVol = (idx, v) => setTracks(prev => { const nt = [...prev]; nt[idx] = { ...nt[idx], volume: parseFloat(v) }; return nt; });
+            const toggleMute = (idx) => setTracks(prev => { const nt = [...prev]; nt[idx] = { ...nt[idx], muted: !nt[idx].muted }; return nt; });
+
             return (
                 <div className="animate-in pb-10 text-left">
                     {toast && <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] border border-slate-700">{toast}</div>}
                     
                     {showConfirmDelete && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in">
-                            <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-slate-200">
+                            <div className="bg-white rounded-3xl p-10 max-w-sm w-full shadow-2xl border border-slate-200">
                                 <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Icon name="AlertCircle" size={32} /></div>
-                                <h4 className="text-2xl font-display font-bold uppercase mb-3 text-slate-900">Supprimer ?</h4>
+                                <h4 className="text-2xl font-display font-bold uppercase mb-3 text-slate-900 text-center">Supprimer ?</h4>
                                 <div className="flex gap-4 mt-6">
                                     <button type="button" onClick={() => setShowConfirmDelete(null)} disabled={isDeleting} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-600">Annuler</button>
                                     <button type="button" onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-red-600 transition-all flex justify-center items-center gap-2">
@@ -529,7 +534,7 @@
                             <header className="brand-gradient text-white px-4 sm:px-6 py-6 sticky top-0 z-50 shadow-xl flex justify-between items-center no-print">
                                 <div className="flex items-center gap-3 sm:gap-4 cursor-pointer" onClick={() => {setView('list'); setIsSelectionMode(false);}}>
                                     <div className="bg-white/10 p-2 sm:p-2.5 rounded-2xl backdrop-blur-md shadow-inner text-white border border-white/20"><Icon name="Music" size={24} /></div>
-                                    <div><h1 className="text-2xl sm:text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[9px] sm:text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase">Senzala Studio</span></div>
+                                    <div><h1 className="text-2xl sm:text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[9px] sm:text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase">Flecha Studio</span></div>
                                 </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`px-3 sm:px-4 py-2.5 rounded-2xl font-bold text-[10px] sm:text-[11px] uppercase transition-all flex items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}>
@@ -543,7 +548,6 @@
                                 </div>
                             </header>
                             
-                            {/* BARRE DE SÉLECTION PDF */}
                             {isSelectionMode && (
                                 <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[95%] max-w-lg bg-slate-900 p-2 sm:p-3 rounded-full flex justify-between items-center shadow-2xl z-50 animate-in border border-slate-700 no-print gap-2">
                                     <button onClick={toggleSelectAll} className={`flex items-center gap-1.5 text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-2 rounded-full transition-colors whitespace-nowrap ${allDisplayedSelected ? 'bg-slate-700 text-white' : 'bg-white/10 text-white/90 hover:text-white hover:bg-white/20'}`}>
@@ -562,14 +566,17 @@
                             <main className="max-w-6xl mx-auto p-4 md:p-10 space-y-8 no-print">
                                 <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
                                     <div className="w-full md:flex-1 relative"><div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" /></div>
-                                    <div className="grid grid-cols-2 md:flex gap-4 w-full md:w-auto">
-                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="px-3 sm:px-4 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100"><option value="">Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
-                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="px-3 sm:px-4 py-4 rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100"><option value="">Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
-                                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="col-span-2 md:col-span-1 px-3 sm:px-4 py-4 rounded-2xl bg-slate-50 font-bold text-blue-600 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-200">
-                                            <option value="latest">Nouveautés</option>
+                                    <div className="grid grid-cols-2 md:flex gap-3 sm:gap-4 w-full md:w-auto">
+                                        <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100 truncate"><option value="">Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
+                                        <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100 truncate"><option value="">Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
+                                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="col-span-2 md:col-span-1 pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-blue-600 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-200 truncate">
+                                            <option value="latest">Récents</option>
                                             <option value="alpha">A - Z</option>
-                                            <option value="family">Par Famille</option>
+                                            <option value="family">Famille</option>
                                         </select>
+                                        <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`md:hidden px-2 sm:px-4 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-[10px] uppercase transition-all flex justify-center items-center gap-1 sm:gap-2 ${isSelectionMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                            <Icon name="Printer" size={14}/> {isSelectionMode ? 'Off' : 'PDF'}
+                                        </button>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -627,6 +634,24 @@
                                                     <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3"><span>Swing</span><span className="text-orange-500">{swing}%</span></div>
                                                     <input type="range" min="0" max="100" value={swing} onChange={e => setSwing(Number(e.target.value))} className="w-full" style={{accentColor: '#f97316'}} />
                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div className="lg:col-span-5 space-y-4">
+                                            <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2 bg-slate-100 p-3 rounded-xl inline-flex"><Icon name="Settings2" size={16}/> Mixeur</h4>
+                                            <div className="space-y-3">
+                                                {tracks.map((track, idx) => {
+                                                    const trackColor = SOUND_LIBRARY[track.id]?.color; 
+                                                    return (
+                                                        <div key={idx} className={`p-4 rounded-2xl flex items-center gap-4 transition-all border ${track.muted ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                                            <div className="w-4 h-4 rounded-full shadow-inner shrink-0" style={{backgroundColor: trackColor}}></div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-[11px] font-bold text-slate-700 uppercase mb-2 truncate">{SOUND_LIBRARY[track.id]?.name}</div>
+                                                                <input type="range" min="0" max="1" step="0.1" value={track.volume} onChange={(e) => changeTrackVol(idx, e.target.value)} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer" style={{accentColor: trackColor}} />
+                                                            </div>
+                                                            <button onClick={() => toggleMute(idx)} className={`p-3 rounded-xl transition-colors shrink-0 ${track.muted ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><Icon name={track.muted ? "VolumeX" : "Volume2"} size={18} /></button>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>
@@ -724,7 +749,7 @@
                             <div className="max-w-4xl mx-auto">
                                 <div className="text-center border-b-4 border-slate-200 pb-6 sm:pb-8 mb-8 sm:mb-12">
                                     <h1 className="text-3xl sm:text-5xl font-display font-bold uppercase tracking-tight veneer-title mb-2 text-slate-900">Carnet de Rythmes</h1>
-                                    <p className="text-[10px] sm:text-sm font-bold text-slate-500 tracking-[0.3em] uppercase">Senzala Villefranche</p>
+                                    <p className="text-[10px] sm:text-sm font-bold text-slate-500 tracking-[0.3em] uppercase">Flecha Villefranche</p>
                                 </div>
                                 <div className="mb-12 sm:mb-16 bg-slate-50 p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-200 break-inside-avoid">
                                     <h2 className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2"><Icon name="Disc" size={18}/> Légende des instruments</h2>
