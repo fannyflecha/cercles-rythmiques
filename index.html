@@ -195,23 +195,25 @@
             const maxR = size/2 - 8; const minR = size/4;
             const spacing = nTracks > 1 ? (maxR - minR) / (nTracks - 1) : 0;
             return (
-                <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="bg-white rounded-full border border-slate-300 shadow-inner">
-                    <line x1={center} y1={10} x2={center} y2={size-10} className="stroke-slate-400" strokeWidth="2" />
-                    <line x1={10} y1={center} x2={size-10} y2={center} className="stroke-slate-400" strokeWidth="2" />
-                    {rTracks.map((track, idx) => {
-                        const radius = maxR - (idx * spacing);
-                        const color = SOUND_LIBRARY[track.id]?.color || '#94a3b8';
-                        const stepsObj = Array.isArray(track.steps) ? track.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (track.steps || {});
-                        return (
-                            <g key={idx}>
-                                <circle cx={center} cy={center} r={radius} className="stroke-slate-300 fill-none" strokeWidth="1.5" />
-                                {Object.entries(stepsObj).map(([step, val], i) => val > 0 && (
-                                    <circle key={i} cx={center + radius * Math.cos((step/tSteps)*2*Math.PI - Math.PI/2)} cy={center + radius * Math.sin((step/tSteps)*2*Math.PI - Math.PI/2)} r="3.5" fill={color} />
-                                ))}
-                            </g>
-                        );
-                    })}
-                </svg>
+                <div className="w-full flex justify-center">
+                    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[110px] h-auto bg-white rounded-full border border-slate-300 shadow-inner">
+                        <line x1={center} y1={10} x2={center} y2={size-10} className="stroke-slate-400" strokeWidth="2" />
+                        <line x1={10} y1={center} x2={size-10} y2={center} className="stroke-slate-400" strokeWidth="2" />
+                        {rTracks.map((track, idx) => {
+                            const radius = maxR - (idx * spacing);
+                            const color = SOUND_LIBRARY[track.id]?.color || '#94a3b8';
+                            const stepsObj = Array.isArray(track.steps) ? track.steps.reduce((acc, s) => ({...acc, [s]: 1}), {}) : (track.steps || {});
+                            return (
+                                <g key={idx}>
+                                    <circle cx={center} cy={center} r={radius} className="stroke-slate-300 fill-none" strokeWidth="1.5" />
+                                    {Object.entries(stepsObj).map(([step, val], i) => val > 0 && (
+                                        <circle key={i} cx={center + radius * Math.cos((step/tSteps)*2*Math.PI - Math.PI/2)} cy={center + radius * Math.sin((step/tSteps)*2*Math.PI - Math.PI/2)} r="3.5" fill={color} />
+                                    ))}
+                                </g>
+                            );
+                        })}
+                    </svg>
+                </div>
             );
         };
 
@@ -426,16 +428,16 @@
                 const spacing = nTracks > 1 ? (maxRadius - minRadius) / (nTracks - 1) : 0;
                 
                 return (
-                    <div className={`relative flex justify-center items-center ${isInteractive ? 'my-6' : 'my-2'}`}>
-                        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="touch-none select-none drop-shadow-xl">
+                    <div className={`relative flex justify-center items-center w-full mx-auto ${isInteractive ? 'my-6' : 'my-2'}`} style={{ maxWidth: size + 'px' }}>
+                        <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-auto touch-none select-none drop-shadow-xl overflow-visible">
                             <circle cx={center} cy={center} r={maxRadius + 20} className="fill-white stroke-slate-200" strokeWidth="1" />
                             
-                            <line x1={center} y1={10} x2={center} y2={size-10} className="stroke-slate-400" strokeWidth="3.5" strokeLinecap="round" />
-                            <line x1={10} y1={center} x2={size-10} y2={center} className="stroke-slate-400" strokeWidth="3.5" strokeLinecap="round" />
+                            <line x1={center} y1={10} x2={center} y2={size-10} className="stroke-slate-500" strokeWidth="3.5" strokeLinecap="round" />
+                            <line x1={10} y1={center} x2={size-10} y2={center} className="stroke-slate-500" strokeWidth="3.5" strokeLinecap="round" />
                             
                             {renderTracks.map((_, idx) => {
                                 const radius = maxRadius - (idx * spacing);
-                                return <circle key={idx} cx={center} cy={center} r={radius} className="stroke-slate-300" strokeWidth="2.5" fill="none" />;
+                                return <circle key={idx} cx={center} cy={center} r={radius} className="stroke-slate-400" strokeWidth="2.5" fill="none" />;
                             })}
                             
                             <circle cx={center} cy={center} r={8} className="fill-slate-800" />
@@ -493,7 +495,7 @@
             const toggleMute = (idx) => setTracks(prev => { const nt = [...prev]; nt[idx] = { ...nt[idx], muted: !nt[idx].muted }; return nt; });
 
             return (
-                <div className="animate-in pb-10">
+                <div className="animate-in pb-10 text-left">
                     {toast && <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] border border-slate-700">{toast}</div>}
                     
                     {showConfirmDelete && (
@@ -501,7 +503,7 @@
                             <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-slate-200">
                                 <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Icon name="AlertCircle" size={32} /></div>
                                 <h4 className="text-2xl font-display font-bold uppercase mb-3 text-slate-900">Supprimer ?</h4>
-                                <div className="flex gap-4">
+                                <div className="flex gap-4 mt-6">
                                     <button type="button" onClick={() => setShowConfirmDelete(null)} disabled={isDeleting} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-600">Annuler</button>
                                     <button type="button" onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-red-600 transition-all flex justify-center items-center gap-2">
                                         {isDeleting ? <Icon name="RefreshCw" className="animate-spin" size={16}/> : "Supprimer"}
@@ -512,7 +514,7 @@
                     )}
 
                     {view === 'list' && (
-                        <div className="min-h-screen text-left">
+                        <div className="min-h-screen">
                             <header className="brand-gradient text-white px-6 py-6 sticky top-0 z-50 shadow-xl flex justify-between items-center">
                                 <div className="flex items-center gap-4 cursor-pointer" onClick={() => {setView('list'); setIsSelectionMode(false);}}>
                                     <div className="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md shadow-inner text-white border border-white/20"><Icon name="Music" size={28} /></div>
@@ -555,7 +557,9 @@
                                                         </button>
                                                     )}
                                                 </div>
-                                                <div className="flex justify-center mb-8 bg-slate-100/50 rounded-full p-4 border border-slate-200">{renderMiniCircle(r)}</div>
+                                                <div className="flex justify-center mb-8 bg-slate-100/50 rounded-full p-4 border border-slate-200 w-full overflow-hidden">
+                                                    {renderMiniCircle(r)}
+                                                </div>
                                                 <div className="text-center mt-auto"><h3 className="text-2xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none">{r.title}</h3>{r.origin && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{r.origin}</p>}</div>
                                             </div>
                                         );
@@ -566,26 +570,27 @@
                     )}
 
                     {view === 'detail' && currentRhythm && (
-                        <div className="min-h-screen pb-12 animate-in text-left">
+                        <div className="min-h-screen pb-12 animate-in">
                             <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden">
                                 <div className="p-8 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center">
                                     <button onClick={goToList} className="absolute top-6 left-6 p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
-                                    <div className="flex justify-center gap-3 mb-6 mt-4">
+                                    <div className="flex justify-center gap-3 mb-6 mt-4 flex-wrap">
                                         {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{currentRhythm.family}</span>}
                                         {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">{currentRhythm.origin}</span>}
                                     </div>
-                                    <h2 className="text-5xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none">{currentRhythm.title}</h2>
+                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none sm:px-10">{currentRhythm.title}</h2>
                                     <div className="absolute top-6 right-6 flex gap-2">
-                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors" title="Copier"><Icon name="Copy" size={18}/></button>
+                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors hidden sm:block" title="Copier"><Icon name="Copy" size={18}/></button>
                                         <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors" title="Modifier"><Icon name="Edit3" size={18}/></button>
-                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors" title="Supprimer"><Icon name="Trash2" size={18}/></button>
+                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors hidden sm:block" title="Supprimer"><Icon name="Trash2" size={18}/></button>
                                     </div>
                                 </div>
                                 <div className="p-6 md:p-12 flex flex-col items-center bg-white">
-                                    <div className="w-full grid lg:grid-cols-12 gap-12 items-start mb-12">
-                                        <div className="lg:col-span-7 flex flex-col items-center bg-slate-50 p-8 rounded-[3rem] shadow-inner border border-slate-100">
-                                            {renderCircle(tracks, steps, window.innerWidth < 400 ? 280 : 380, false, true)}
-                                            <div className="flex flex-col md:flex-row gap-6 mt-8 w-full text-left">
+                                    <div className="w-full grid lg:grid-cols-12 gap-8 lg:gap-12 items-start mb-12">
+                                        <div className="lg:col-span-7 flex flex-col items-center bg-slate-50 p-6 sm:p-8 rounded-[3rem] shadow-inner border border-slate-100 w-full overflow-hidden">
+                                            {/* Fixed logical size, SVG adapts via CSS */}
+                                            {renderCircle(tracks, steps, 360, false, true)}
+                                            <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full">
                                                 <div className="flex-1 bg-white px-6 py-4 rounded-2xl border border-slate-200 shadow-sm">
                                                     <div className="flex justify-between text-[11px] font-black uppercase text-slate-500 mb-3"><span>Tempo</span><span className="text-blue-600">{bpm} BPM</span></div>
                                                     <input type="range" min="40" max="200" value={bpm} onChange={e => setBpm(Number(e.target.value))} className="w-full" />
@@ -596,26 +601,26 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="lg:col-span-5 space-y-4">
+                                        <div className="lg:col-span-5 space-y-4 w-full">
                                             <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-widest mb-6 flex items-center gap-2 bg-slate-100 p-3 rounded-xl inline-flex"><Icon name="Settings2" size={16}/> Mixeur</h4>
                                             <div className="space-y-3">
                                                 {tracks.map((track, idx) => {
                                                     const trackColor = SOUND_LIBRARY[track.id]?.color; 
                                                     return (
                                                         <div key={idx} className={`p-4 rounded-2xl flex items-center gap-4 transition-all border ${track.muted ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-200 shadow-sm'}`}>
-                                                            <div className="w-4 h-4 rounded-full shadow-inner" style={{backgroundColor: trackColor}}></div>
-                                                            <div className="flex-1">
+                                                            <div className="w-4 h-4 rounded-full shadow-inner shrink-0" style={{backgroundColor: trackColor}}></div>
+                                                            <div className="flex-1 min-w-0">
                                                                 <div className="text-[11px] font-bold text-slate-700 uppercase mb-2 truncate">{SOUND_LIBRARY[track.id]?.name}</div>
                                                                 <input type="range" min="0" max="1" step="0.1" value={track.volume} onChange={(e) => changeTrackVol(idx, e.target.value)} className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer" style={{accentColor: trackColor}} />
                                                             </div>
-                                                            <button onClick={() => toggleMute(idx)} className={`p-3 rounded-xl transition-colors ${track.muted ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><Icon name={track.muted ? "VolumeX" : "Volume2"} size={18} /></button>
+                                                            <button onClick={() => toggleMute(idx)} className={`p-3 rounded-xl transition-colors shrink-0 ${track.muted ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}><Icon name={track.muted ? "VolumeX" : "Volume2"} size={18} /></button>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid md:grid-cols-2 gap-8 w-full text-left">
+                                    <div className="grid md:grid-cols-2 gap-8 w-full">
                                         {currentRhythm.instruments && (
                                             <section className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-200">
                                                 <h4 className="text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4>
@@ -635,19 +640,19 @@
                     )}
 
                     {view === 'form' && (
-                        <div className="min-h-screen pb-12 bg-slate-100 animate-in text-left">
+                        <div className="min-h-screen pb-12 bg-slate-100 animate-in">
                             <div className="max-w-5xl mx-auto bg-white md:mt-10 md:rounded-[3rem] shadow-2xl overflow-hidden">
                                 <div className="bg-slate-50 p-8 md:p-10 border-b border-slate-200 flex justify-between items-center sticky top-0 z-20">
                                     <h2 className="text-3xl font-display font-bold text-slate-800 uppercase veneer-title leading-none">{formData.id ? 'Éditer' : 'Nouveau'}</h2>
                                     <div className="flex items-center gap-3">
-                                        <button type="button" onClick={clearAllNotes} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-widest shadow-sm transition-colors flex items-center gap-2"><Icon name="Trash2" size={16} /> Vider le cercle</button>
+                                        <button type="button" onClick={clearAllNotes} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-widest shadow-sm transition-colors hidden sm:flex items-center gap-2"><Icon name="Trash2" size={16} /> Vider le cercle</button>
                                         <button type="button" onClick={goToList} className="text-slate-400 hover:text-slate-800 p-2 transition-colors bg-white rounded-full shadow-sm border border-slate-200"><Icon name="ArrowLeft" size={24} /></button>
                                     </div>
                                 </div>
-                                <form onSubmit={handleSave} className="p-6 md:p-12 space-y-12">
+                                <form onSubmit={handleSave} className="p-6 md:p-12 space-y-12 w-full">
                                     <div className="space-y-6">
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Nom du rythme *</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title" placeholder="EX: IJEXÁ..." /></div>
-                                        <div className="grid grid-cols-2 gap-6">
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Nom du rythme *</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-2xl sm:text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title" placeholder="EX: IJEXÁ..." /></div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                             <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Famille</label><input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="family-suggestions">{uniqueFamilies.map(t => <option key={t} value={t} />)}</datalist></div>
                                             <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Origine</label><input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="origin-suggestions">{uniqueOrigins.map(o => <option key={o} value={o} />)}</datalist></div>
                                         </div>
@@ -655,9 +660,10 @@
                                     <div className="pt-8 border-t border-slate-200">
                                         <h3 className="text-xl font-display font-bold text-slate-800 uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={24}/> Studio Interactif</h3>
                                         <div className="grid lg:grid-cols-12 gap-8">
-                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2.5rem] p-6 border border-slate-200 flex flex-col items-center shadow-inner">
-                                                {renderCircle(tracks, steps, window.innerWidth < 400 ? 280 : 380, true, true)}
-                                                <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-left">
+                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2.5rem] p-4 sm:p-6 border border-slate-200 flex flex-col items-center shadow-inner overflow-hidden w-full">
+                                                {/* Use consistent logical size for form view, SVG adapts via CSS */}
+                                                {renderCircle(tracks, steps, 360, true, true)}
+                                                <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                                                     <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
                                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Tempo ({bpm})</span>
                                                         <input type="range" min="40" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full"/>
@@ -670,21 +676,21 @@
                                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 text-center">Divisions</span>
                                                         <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
                                                             {[8, 12, 16, 24].map(s => (
-                                                                <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); clearAllNotes();}} className={`px-2.5 py-1 rounded text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>
+                                                                <button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); clearAllNotes();}} className={`px-2 py-1 sm:px-2.5 rounded text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>
                                                             ))}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="lg:col-span-5 space-y-3">
+                                            <div className="lg:col-span-5 space-y-3 w-full">
                                                 <div className="bg-blue-50 text-blue-700 text-xs p-4 rounded-xl border border-blue-100 font-medium mb-6">💡 <strong>Astuce :</strong> Cliquez plusieurs fois sur un point pour marquer un <strong>accent fort</strong>.</div>
                                                 {tracks.map((track, idx) => (
-                                                    <div key={idx} className="flex items-center gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200">
+                                                    <div key={idx} className="flex items-center gap-2 sm:gap-3 bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200">
                                                         <div className="w-4 h-4 rounded-full shadow-inner ml-2 shrink-0" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
-                                                        <select value={track.id} onChange={(e) => { const nt = [...tracks]; nt[idx].id = e.target.value; setTracks(nt); AudioEngine.playTone(e.target.value); }} className="flex-1 bg-transparent text-[13px] font-bold py-2 outline-none cursor-pointer border-none text-slate-700">
+                                                        <select value={track.id} onChange={(e) => { const nt = [...tracks]; nt[idx].id = e.target.value; setTracks(nt); AudioEngine.playTone(e.target.value); }} className="flex-1 bg-transparent text-[11px] sm:text-[13px] font-bold py-2 outline-none cursor-pointer border-none text-slate-700 w-full min-w-0">
                                                             {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (<option key={key} value={key}>{lib.name}</option>))}
                                                         </select>
-                                                        <button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-xl" title="Supprimer piste"><Icon name="Trash2" size={18}/></button>
+                                                        <button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-xl shrink-0" title="Supprimer piste"><Icon name="Trash2" size={18}/></button>
                                                     </div>
                                                 ))}
                                                 {tracks.length < 8 && (
@@ -699,9 +705,9 @@
                                         <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Instruments recommandés</label><input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-medium text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
                                         <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Commentaires / Pédagogie</label><textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-5 bg-slate-50 rounded-[1.5rem] font-medium text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
                                     </div>
-                                    <div className="pt-6 flex flex-col md:flex-row gap-4">
+                                    <div className="pt-6 flex flex-col sm:flex-row gap-4">
                                         {formData.id && (
-                                            <button type="button" onClick={() => setShowConfirmDelete(formData.id)} className="w-full md:w-auto px-8 py-6 bg-red-50 text-red-600 rounded-[2rem] font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex justify-center items-center gap-2">
+                                            <button type="button" onClick={() => setShowConfirmDelete(formData.id)} className="w-full sm:w-auto px-8 py-6 bg-red-50 text-red-600 rounded-[2rem] font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex justify-center items-center gap-2">
                                                 <Icon name="Trash2" size={18}/> Supprimer
                                             </button>
                                         )}
@@ -717,13 +723,14 @@
                     {view === 'print' && (
                         <div className="bg-white min-h-screen text-slate-900 font-sans p-8 md:p-16">
                             <div className="no-print flex gap-4 mb-12 justify-center"><button onClick={() => setView('list')} className="px-6 py-2 border-2 border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors uppercase tracking-widest text-slate-600">Fermer</button><button onClick={() => window.print()} className="px-8 py-2 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 flex items-center gap-2"><Icon name="Printer" size={16}/> Imprimer PDF</button></div>
-                            <div className="max-w-4xl mx-auto text-left">
+                            <div className="max-w-4xl mx-auto">
                                 <div className="text-center border-b-4 border-slate-200 pb-8 mb-12"><h1 className="text-5xl font-display font-bold uppercase tracking-tight veneer-title mb-2 text-slate-900">Carnet de Rythmes</h1><p className="text-sm font-bold text-slate-500 tracking-[0.3em] uppercase">Senzala Villefranche</p></div>
                                 <div className="mb-16 bg-slate-50 p-8 rounded-3xl border border-slate-200 break-inside-avoid">
                                     <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2"><Icon name="Disc" size={18}/> Légende des instruments</h2>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
                                         {legendSounds.map(([key, lib]) => (<div key={key} className="flex items-center gap-3"><div className="w-5 h-5 rounded-full border border-slate-300 shadow-sm shrink-0" style={{backgroundColor: lib.color}}></div><span className="text-xs font-bold uppercase text-slate-700 truncate">{lib.name}</span></div>))}
                                     </div>
+                                    <div className="mt-8 pt-4 border-t border-slate-200 flex gap-6 text-xs font-medium text-slate-500"><span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-400"></div> Note Normale</span><span className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-slate-400 ring-2 ring-slate-800"></div> Note Accentuée</span></div>
                                 </div>
                                 <div className="space-y-24">
                                     {catalog.filter(r => selectedRhythms.includes(r.id)).map(r => {
@@ -732,6 +739,7 @@
                                             <div key={r.id} className="page-break">
                                                 <div className="text-center mb-8"><h3 className="text-4xl font-display font-bold uppercase mb-3 veneer-title text-slate-900">{r.title}</h3><div className="flex justify-center items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{r.family && <span className="bg-slate-100 px-3 py-1 rounded">{r.family}</span>}{r.origin && <span>• {r.origin}</span>}<span>• {r.bpm} BPM</span></div></div>
                                                 <div className="flex justify-center mb-8">{renderCircle(printTracks, r.totalSteps || 16, 450, false, false)}</div>
+                                                {(r.instruments || r.note) && (<div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-sm"><p className="mb-4"><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Instruments :</span></strong> {r.instruments}</p><p><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Notes :</span></strong> <span className="whitespace-pre-wrap leading-relaxed">{r.note}</span></p></div>)}
                                             </div>
                                         );
                                     })}
