@@ -106,6 +106,9 @@
 
         // --- PALETTE DE COULEURS ---
         const SOUND_LIBRARY = {
+            'berimbau-dong': { name: 'Berimbau Dong (Grave)', color: '#b45309' },
+            'berimbau-ding': { name: 'Berimbau Ding (Aigu)', color: '#f59e0b' },
+            'berimbau-tchi': { name: 'Berimbau Tchi (Grésillé)', color: '#fde68a' },
             'pandeiro-grave': { name: 'Pandeiro Grave', color: '#1e1b4b' }, 
             'pandeiro-slap': { name: 'Pandeiro Slap', color: '#f43f5e' }, 
             'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#0ea5e9' }, 
@@ -170,6 +173,18 @@
                 };
 
                 switch (type) {
+                    case 'berimbau-dong': 
+                        createOsc('triangle', 90, now, 0.6, 0.8); 
+                        createNoise('bandpass', 600, 0.1, 0.2); 
+                        break;
+                    case 'berimbau-ding': 
+                        createOsc('triangle', 115, now, 0.5, 0.8); 
+                        createNoise('bandpass', 800, 0.1, 0.2); 
+                        break;
+                    case 'berimbau-tchi': 
+                        createOsc('triangle', 115, now, 0.05, 0.3); 
+                        createNoise('highpass', 4000, 0.15, 0.6); 
+                        break;
                     case 'pandeiro-grave': createOsc('sine', 90, now, 0.4, 0.8); break;
                     case 'pandeiro-slap': createOsc('square', 400, now, 0.05, 0.3); createNoise('highpass', 3000, 0.08, 0.5); break;
                     case 'pandeiro-jingle': createNoise('highpass', 3000, 0.15, 0.4); createOsc('square', 6000, now, 0.05, 0.1); break;
