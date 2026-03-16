@@ -104,27 +104,38 @@
         const db = firebase.firestore();
         const DB_COLLECTION = "rhythms_catalogue";
 
-        // --- PALETTE DE COULEURS ---
+        // --- PALETTE DE COULEURS "PASTEL + CONTOUR" ---
         const SOUND_LIBRARY = {
-            'berimbau-dong': { name: 'Berimbau Dong (Grave)', color: '#b45309' },
-            'berimbau-ding': { name: 'Berimbau Ding (Aigu)', color: '#f59e0b' },
-            'berimbau-tchi': { name: 'Berimbau Tchi (Grésillé)', color: '#fde68a' },
-            'pandeiro-grave': { name: 'Pandeiro Grave', color: '#1e1b4b' }, 
-            'pandeiro-slap': { name: 'Pandeiro Slap', color: '#f43f5e' }, 
-            'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#0ea5e9' }, 
-            'quinto-open': { name: 'Quinto Ton', color: '#f97316' }, 
-            'quinto-blem': { name: 'Quinto Blem', color: '#431407' }, 
-            'quinto-slap': { name: 'Quinto Slap', color: '#fdba74' }, 
-            'conga-open': { name: 'Conga Ton', color: '#b91c1c' }, 
-            'conga-blem': { name: 'Conga Blem', color: '#4c1d95' }, 
-            'conga-slap': { name: 'Conga Slap', color: '#fca5a5' }, 
-            'agogo-high': { name: 'Agogo Aigu', color: '#eab308' }, 
-            'agogo-low': { name: 'Agogo Grave', color: '#854d0e' }, 
-            'cowbell': { name: 'Cowbell', color: '#475569' }, 
-            'shaker': { name: 'Shaker', color: '#10b981' }, 
-            'kick': { name: 'Kick Electro', color: '#000000' }, 
-            'snare': { name: 'Snare Electro', color: '#6366f1' }, 
-            'hihat': { name: 'Hi-Hat', color: '#2dd4bf' } 
+            // BERIMBAU (Orange/Marron clair)
+            'berimbau-dong': { name: 'Berimbau Dong (Grave)', color: '#d97706' }, // amber-600
+            'berimbau-ding': { name: 'Berimbau Ding (Aigu)', color: '#fb923c' },  // orange-400
+            'berimbau-tchi': { name: 'Berimbau Tchi (Grésillé)', color: '#fde68a' }, // amber-200
+            
+            // PANDEIRO (Rouge clair)
+            'pandeiro-grave': { name: 'Pandeiro Grave', color: '#dc2626' }, // red-600
+            'pandeiro-slap': { name: 'Pandeiro Slap', color: '#f87171' }, // red-400
+            'pandeiro-jingle': { name: 'Pandeiro Cymbales', color: '#fecaca' }, // red-200
+            
+            // QUINTO (Vert clair)
+            'quinto-blem': { name: 'Quinto Blem (Étouffé)', color: '#16a34a' }, // green-600
+            'quinto-open': { name: 'Quinto Ton (Ouvert)', color: '#4ade80' }, // green-400
+            'quinto-slap': { name: 'Quinto Slap (Claqué)', color: '#bbf7d0' }, // green-200
+            
+            // CONGAS (Bleu clair)
+            'conga-blem': { name: 'Conga Blem (Étouffé)', color: '#2563eb' }, // blue-600
+            'conga-open': { name: 'Conga Ton (Ouvert)', color: '#60a5fa' }, // blue-400
+            'conga-slap': { name: 'Conga Slap (Claqué)', color: '#bfdbfe' }, // blue-200
+            
+            // AGOGO (Violet clair)
+            'agogo-low': { name: 'Agogo Grave', color: '#9333ea' }, // purple-600
+            'agogo-high': { name: 'Agogo Aigu', color: '#c084fc' }, // purple-400
+            
+            // AUTRES & ELECTRO (Gris clairs)
+            'cowbell': { name: 'Cowbell', color: '#71717a' }, // zinc-500
+            'shaker': { name: 'Shaker', color: '#d4d4d8' }, // zinc-300
+            'kick': { name: 'Kick Electro', color: '#52525b' }, // zinc-600
+            'snare': { name: 'Snare Electro', color: '#a1a1aa' }, // zinc-400
+            'hihat': { name: 'Hi-Hat', color: '#e4e4e7' } // zinc-200
         };
 
         const AudioEngine = {
@@ -224,7 +235,7 @@
                                 <g key={idx}>
                                     <circle cx={center} cy={center} r={radius} className="stroke-slate-300 fill-none" strokeWidth="1.5" />
                                     {Object.entries(stepsObj).map(([step, val], i) => val > 0 && (
-                                        <circle key={i} cx={center + radius * Math.cos((step/tSteps)*2*Math.PI - Math.PI/2)} cy={center + radius * Math.sin((step/tSteps)*2*Math.PI - Math.PI/2)} r="3.5" fill={color} />
+                                        <circle key={i} cx={center + radius * Math.cos((step/tSteps)*2*Math.PI - Math.PI/2)} cy={center + radius * Math.sin((step/tSteps)*2*Math.PI - Math.PI/2)} r="3.5" fill={color} stroke="#0f172a" strokeWidth="0.75" />
                                     ))}
                                 </g>
                             );
@@ -312,6 +323,15 @@
                 }
             };
 
+            const legendSounds = useMemo(() => {
+                if (view !== 'print') return [];
+                const usedIds = new Set();
+                catalog.filter(r => selectedRhythms.includes(r.id)).forEach(r => {
+                    (r.tracks || []).forEach(t => usedIds.add(t.id));
+                });
+                return Object.entries(SOUND_LIBRARY).filter(([id, _]) => usedIds.has(id));
+            }, [view, catalog, selectedRhythms]);
+
             const nextNote = useCallback(() => {
                 const stepTime = (60.0 / bpm * 4) / steps;
                 let delay = 0;
@@ -390,7 +410,7 @@
                 } else {
                     setFormData({ title: '', family: '', origin: '', instruments: '', note: '' });
                     setBpm(100); setSteps(16); setSwing(0);
-                    setTracks([{ id: 'pandeiro-grave', steps: {0: 1, 8: 1}, volume: 1, muted: false }]);
+                    setTracks([{ id: 'berimbau-dong', steps: {0: 1, 8: 1}, volume: 1, muted: false }]);
                 }
                 setView('form'); setPreviewId(null);
             };
@@ -487,7 +507,6 @@
                                             const val = stepsObj[i] || 0; 
                                             const current = isInteractive && currentStep === i;
                                             const isQuarter = i % (renderSteps/4) === 0;
-                                            const isLightColor = ['#ffedd5', '#fee2e2', '#fef08a', '#fdba74', '#fca5a5', '#7dd3fc'].includes(color.toLowerCase());
 
                                             return (
                                                 <g key={i} onClick={() => isEditable && toggleStep(idx, i)} className={isEditable ? "cursor-pointer" : ""}>
@@ -500,8 +519,8 @@
                                                         fill={color} 
                                                         className={isInteractive ? "transition-all" : ""}
                                                         style={{ 
-                                                            stroke: current ? '#0f172a' : (val > 0 && isLightColor ? 'rgba(0,0,0,0.2)' : 'none'), 
-                                                            strokeWidth: current ? 3 : 1.5, 
+                                                            stroke: current ? '#ffffff' : '#0f172a', 
+                                                            strokeWidth: current ? 3 : 2, 
                                                             opacity: val > 0 || current ? 1 : 0,
                                                             filter: val > 0 ? 'drop-shadow(0px 2px 3px rgba(0,0,0,0.4))' : 'none'
                                                         }}
@@ -527,14 +546,14 @@
             const toggleMute = (idx) => setTracks(prev => { const nt = [...prev]; nt[idx] = { ...nt[idx], muted: !nt[idx].muted }; return nt; });
 
             return (
-                <div className="animate-in pb-10">
+                <div className="animate-in pb-10 text-left">
                     {toast && <div className="fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl font-bold text-xs uppercase tracking-widest z-[100] border border-slate-700">{toast}</div>}
                     
                     {showConfirmDelete && (
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in">
                             <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl border border-slate-200">
                                 <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500"><Icon name="AlertCircle" size={32} /></div>
-                                <h4 className="text-2xl font-display font-bold uppercase mb-3 text-slate-900">Supprimer ?</h4>
+                                <h4 className="text-2xl font-display font-bold uppercase mb-3 text-slate-900 text-center">Supprimer ?</h4>
                                 <div className="flex gap-4 mt-6">
                                     <button type="button" onClick={() => setShowConfirmDelete(null)} disabled={isDeleting} className="flex-1 py-3.5 bg-slate-100 rounded-xl font-bold text-xs uppercase tracking-widest text-slate-600">Annuler</button>
                                     <button type="button" onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3.5 bg-red-500 text-white rounded-xl font-bold text-xs uppercase shadow-lg hover:bg-red-600 transition-all flex justify-center items-center gap-2">
@@ -546,12 +565,12 @@
                     )}
 
                     {view === 'list' && (
-                        <div className="min-h-screen">
+                        <div className="min-h-screen text-left">
                             <div className="sticky top-0 z-50 no-print">
-                                <header className="brand-gradient text-white px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center shadow-lg relative z-10">
+                                <header className="brand-gradient text-white px-4 sm:px-6 py-4 sm:py-5 flex justify-between items-center shadow-lg relative z-10 text-left">
                                     <div className="flex items-center gap-3 sm:gap-4 cursor-pointer" onClick={() => {setView('list'); setIsSelectionMode(false);}}>
                                         <div className="bg-white/10 p-2 sm:p-2.5 rounded-2xl backdrop-blur-md shadow-inner text-white border border-white/20"><Icon name="Music" size={24} /></div>
-                                        <div><h1 className="text-2xl sm:text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[9px] sm:text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase">Flecha Studio</span></div>
+                                        <div><h1 className="text-2xl sm:text-3xl font-display font-bold uppercase leading-none tracking-tight">Rythmes</h1><span className="text-[9px] sm:text-[10px] font-bold opacity-80 tracking-[0.2em] block mt-1 uppercase text-left">Flecha Studio</span></div>
                                     </div>
                                     <div className="flex gap-2">
                                         <button onClick={() => { setIsSelectionMode(!isSelectionMode); setSelectedRhythms([]); stopAudio(); }} className={`px-3 sm:px-4 py-2.5 rounded-2xl font-bold text-[10px] sm:text-[11px] uppercase transition-all flex items-center gap-2 ${isSelectionMode ? 'bg-slate-800 text-white shadow-inner border border-slate-700' : 'bg-white/10 text-white hover:bg-white/20'}`}>
@@ -586,10 +605,10 @@
                                 )}
                             </div>
                             
-                            <main className="max-w-6xl mx-auto p-4 md:p-10 space-y-8 no-print">
-                                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center">
-                                    <div className="w-full md:flex-1 relative"><div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" /></div>
-                                    <div className="grid grid-cols-2 md:flex gap-3 sm:gap-4 w-full md:w-auto">
+                            <main className="max-w-6xl mx-auto p-4 md:p-10 space-y-8 text-left no-print">
+                                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 items-center text-left">
+                                    <div className="w-full md:flex-1 relative text-left"><div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" /></div>
+                                    <div className="grid grid-cols-2 md:flex gap-3 sm:gap-4 w-full md:w-auto text-left">
                                         <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100 truncate"><option value="">Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
                                         <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100 truncate"><option value="">Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
                                         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="col-span-2 md:col-span-1 pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-blue-600 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-200 truncate">
@@ -599,13 +618,13 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
                                     {displayCatalog.map(r => {
                                         const isThisPreviewPlaying = previewId === r.id && isPlaying;
                                         return (
                                             <div key={r.id} onClick={() => handleCardClick(r)} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all cursor-pointer flex flex-col h-full card-hover animate-in relative group overflow-hidden ${isSelectionMode && selectedRhythms.includes(r.id) ? 'border-blue-500 bg-blue-50/50 scale-[0.98]' : 'border-transparent hover:border-blue-300'}`}>
                                                 <div className="flex justify-between items-start mb-6">
-                                                    <span className="bg-white text-slate-600 shadow-sm border border-slate-200 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest">{r.family || 'Général'}</span>
+                                                    <span className="bg-white text-slate-600 shadow-sm border border-slate-200 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest text-left">{r.family || 'Général'}</span>
                                                     {isSelectionMode ? (
                                                         <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${selectedRhythms.includes(r.id) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 border-slate-300 text-transparent'}`}><Icon name="Check" size={16}/></div>
                                                     ) : (
@@ -615,7 +634,7 @@
                                                     )}
                                                 </div>
                                                 <div className="flex justify-center mb-6 bg-slate-50/50 rounded-full p-4 border border-slate-100">{renderMiniCircle(r)}</div>
-                                                <div className="text-center mt-auto"><h3 className="text-xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none">{r.title}</h3>{r.origin && <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-2">{r.origin}</p>}</div>
+                                                <div className="text-center mt-auto text-left text-center"><h3 className="text-2xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none text-center">{r.title}</h3>{r.origin && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 text-center">{r.origin}</p>}</div>
                                             </div>
                                         );
                                     })}
@@ -625,39 +644,38 @@
                     )}
 
                     {view === 'detail' && currentRhythm && (
-                        <div className="min-h-screen pb-12 animate-in no-print">
-                            <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden">
-                                <div className="p-6 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center">
-                                    <button onClick={goToList} className="absolute top-4 sm:top-6 left-4 sm:left-6 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
-                                    <div className="flex justify-center gap-2 mb-4 mt-6">
-                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{currentRhythm.family}</span>}
-                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{currentRhythm.origin}</span>}
+                        <div className="min-h-screen pb-12 animate-in no-print text-center text-left">
+                            <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden text-center text-left">
+                                <div className="p-6 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center text-left text-center">
+                                    <button onClick={goToList} className="absolute top-4 sm:top-6 left-4 sm:left-6 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform text-left"><Icon name="ArrowLeft" size={20}/></button>
+                                    <div className="flex justify-center gap-2 mb-4 mt-6 text-left text-center">
+                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-left">{currentRhythm.family}</span>}
+                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-left">{currentRhythm.origin}</span>}
                                     </div>
-                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none px-4">{currentRhythm.title}</h2>
-                                    
-                                    <div className="flex justify-center sm:absolute sm:top-6 sm:right-6 gap-2 mt-6 sm:mt-0">
-                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors hidden sm:block" title="Copier"><Icon name="Copy" size={16}/></button>
-                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors" title="Modifier"><Icon name="Edit3" size={16}/></button>
-                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors hidden sm:block" title="Supprimer"><Icon name="Trash2" size={16}/></button>
+                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none text-left text-center px-4">{currentRhythm.title}</h2>
+                                    <div className="flex justify-center sm:absolute sm:top-6 sm:right-6 gap-2 mt-6 sm:mt-0 text-left">
+                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors text-left" title="Copier"><Icon name="Copy" size={16}/></button>
+                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors text-left" title="Modifier"><Icon name="Edit3" size={16}/></button>
+                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors text-left" title="Supprimer"><Icon name="Trash2" size={16}/></button>
                                     </div>
                                 </div>
-                                <div className="p-4 md:p-12 flex flex-col items-center">
-                                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center bg-slate-50 p-4 sm:p-8 rounded-[2.5rem] shadow-inner border border-slate-100 mb-8">
+                                <div className="p-4 md:p-12 flex flex-col items-center bg-white text-left">
+                                    <div className="w-full max-w-2xl mx-auto flex flex-col items-center bg-slate-50 p-4 sm:p-8 rounded-[2.5rem] shadow-inner border border-slate-100 mb-8 text-left text-left">
                                         {renderCircle(tracks, steps, 360, false, true)}
-                                        <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full">
-                                            <div className="flex-1 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
-                                                <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3"><span>Tempo</span><span className="text-blue-600">{bpm} BPM</span></div>
-                                                <input type="range" min="40" max="200" value={bpm} onChange={e => setBpm(Number(e.target.value))} className="w-full" />
+                                        <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full text-left text-left">
+                                            <div className="flex-1 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm text-left">
+                                                <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3 text-left"><span>Tempo</span><span className="text-blue-600">{bpm} BPM</span></div>
+                                                <input type="range" min="40" max="200" value={bpm} onChange={e => setBpm(Number(e.target.value))} className="w-full text-left" />
                                             </div>
-                                            <div className="flex-1 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm">
-                                                <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3"><span>Swing</span><span className="text-orange-500">{swing}%</span></div>
-                                                <input type="range" min="0" max="100" value={swing} onChange={e => setSwing(Number(e.target.value))} className="w-full" style={{accentColor: '#f97316'}} />
+                                            <div className="flex-1 bg-white px-5 py-4 rounded-2xl border border-slate-200 shadow-sm text-left">
+                                                <div className="flex justify-between text-[10px] sm:text-[11px] font-black uppercase text-slate-500 mb-3 text-left"><span>Swing</span><span className="text-orange-500">{swing}%</span></div>
+                                                <input type="range" min="0" max="100" value={swing} onChange={e => setSwing(Number(e.target.value))} className="w-full text-left" style={{accentColor: '#f97316'}} />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="grid md:grid-cols-2 gap-6 w-full">
-                                        {currentRhythm.instruments && (<section className="bg-slate-50 p-6 sm:p-8 rounded-[2rem] border border-slate-200"><h4 className="text-[10px] sm:text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Disc" size={16}/> Instruments</h4><p className="font-bold text-slate-800 leading-relaxed text-sm">{currentRhythm.instruments}</p></section>)}
-                                        {currentRhythm.note && (<section className="bg-blue-50 p-6 sm:p-8 rounded-[2rem] border border-blue-100 md:col-span-2"><h4 className="text-[10px] sm:text-[11px] font-black text-blue-600 mb-4 uppercase tracking-[0.3em] flex items-center gap-2"><Icon name="Info" size={16}/> Pédagogie</h4><p className="font-medium text-slate-700 leading-relaxed whitespace-pre-wrap text-sm">{currentRhythm.note}</p></section>)}
+                                    <div className="grid md:grid-cols-2 gap-6 w-full text-left text-left">
+                                        {currentRhythm.instruments && (<section className="bg-slate-50 p-6 sm:p-8 rounded-[2rem] border border-slate-200 text-left text-left"><h4 className="text-[10px] sm:text-[11px] font-black text-slate-500 mb-4 uppercase tracking-[0.3em] flex items-center gap-2 text-left text-left"><Icon name="Disc" size={16}/> Instruments</h4><p className="font-bold text-slate-800 leading-relaxed text-sm text-left text-left">{currentRhythm.instruments}</p></section>)}
+                                        {currentRhythm.note && (<section className="bg-blue-50 p-6 sm:p-8 rounded-[2rem] border border-blue-100 md:col-span-2 text-left text-left"><h4 className="text-[10px] sm:text-[11px] font-black text-blue-600 mb-4 uppercase tracking-[0.3em] flex items-center gap-2 text-left text-left"><Icon name="Info" size={16}/> Pédagogie</h4><p className="font-medium text-slate-700 leading-relaxed whitespace-pre-wrap text-sm text-left text-left">{currentRhythm.note}</p></section>)}
                                     </div>
                                 </div>
                             </div>
@@ -665,75 +683,38 @@
                     )}
 
                     {view === 'form' && (
-                        <div className="min-h-screen pb-12 bg-slate-100 animate-in no-print">
-                            <div className="max-w-5xl mx-auto bg-white md:mt-10 md:rounded-[3rem] shadow-2xl overflow-hidden">
-                                <div className="bg-slate-50 p-6 md:p-10 border-b border-slate-200 flex justify-between items-center sticky top-0 z-20">
-                                    <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-800 uppercase veneer-title leading-none truncate pr-4">{formData.id ? 'Éditer' : 'Nouveau'}</h2>
-                                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                                        <button type="button" onClick={clearAllNotes} className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-widest shadow-sm transition-colors flex items-center gap-2">
-                                            <Icon name="Trash2" size={16} /> 
-                                            <span className="hidden sm:inline">Vider le cercle</span>
-                                            <span className="sm:hidden">Vider</span>
-                                        </button>
-                                        <button type="button" onClick={goToList} className="text-slate-400 hover:text-slate-800 p-2 transition-colors bg-white rounded-full shadow-sm border border-slate-200"><Icon name="ArrowLeft" size={20} /></button>
-                                    </div>
+                        <div className="min-h-screen pb-12 bg-slate-100 animate-in no-print text-left text-left">
+                            <div className="max-w-5xl mx-auto bg-white md:mt-10 md:rounded-[3rem] shadow-2xl overflow-hidden text-left text-left">
+                                <div className="bg-slate-50 p-6 md:p-10 border-b border-slate-200 flex justify-between items-center sticky top-0 z-20 text-left text-left">
+                                    <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-800 uppercase veneer-title leading-none truncate pr-4 text-left text-left">{formData.id ? 'Éditer' : 'Nouveau'}</h2>
+                                    <div className="flex items-center gap-2 sm:gap-3 shrink-0 text-left text-left text-left"><button type="button" onClick={clearAllNotes} className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[10px] sm:text-xs font-bold text-slate-500 hover:text-red-500 uppercase tracking-widest shadow-sm transition-colors flex items-center gap-2 text-left"><Icon name="Trash2" size={16} /> <span className="hidden sm:inline">Vider le cercle</span><span className="sm:hidden">Vider</span></button><button type="button" onClick={goToList} className="text-slate-400 hover:text-slate-800 p-2 transition-colors bg-white rounded-full shadow-sm border border-slate-200 text-left"><Icon name="ArrowLeft" size={20} /></button></div>
                                 </div>
-                                <form onSubmit={handleSave} className="p-4 sm:p-6 md:p-12 space-y-8 sm:space-y-12">
-                                    <div className="space-y-6">
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Nom du rythme *</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-2xl sm:text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title" placeholder="EX: IJEXÁ..." /></div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Famille</label><input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-xs sm:text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="family-suggestions">{uniqueFamilies.map(t => <option key={t} value={t} />)}</datalist></div>
-                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Origine</label><input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-xs sm:text-sm uppercase border border-slate-200 outline-none focus:bg-white" /><datalist id="origin-suggestions">{uniqueOrigins.map(o => <option key={o} value={o} />)}</datalist></div>
+                                <form onSubmit={handleSave} className="p-4 sm:p-6 md:p-12 space-y-8 sm:space-y-12 text-left text-left text-left">
+                                    <div className="space-y-6 text-left text-left text-left text-left">
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest text-left text-left text-left">Nom du rythme *</label><input required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1.5rem] font-display font-bold text-2xl sm:text-3xl outline-none focus:ring-4 focus:ring-blue-500/20 border border-slate-200 uppercase veneer-title text-left" placeholder="EX: IJEXÁ..." /></div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-left text-left text-left text-left">
+                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest text-left text-left text-left text-left text-left">Famille</label><input type="text" list="family-suggestions" value={formData.family} onChange={e => setFormData({...formData, family: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-xs sm:text-sm uppercase border border-slate-200 outline-none focus:bg-white text-left text-left" /><datalist id="family-suggestions">{uniqueFamilies.map(t => <option key={t} value={t} />)}</datalist></div>
+                                            <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest text-left text-left text-left text-left text-left">Origine</label><input type="text" list="origin-suggestions" value={formData.origin} onChange={e => setFormData({...formData, origin: e.target.value})} className="w-full p-4 bg-slate-50 rounded-[1rem] font-bold text-xs sm:text-sm uppercase border border-slate-200 outline-none focus:bg-white text-left text-left" /><datalist id="origin-suggestions">{uniqueOrigins.map(o => <option key={o} value={o} />)}</datalist></div>
                                         </div>
                                     </div>
-                                    <div className="pt-8 border-t border-slate-200">
-                                        <h3 className="text-lg sm:text-xl font-display font-bold text-slate-800 uppercase mb-6 veneer-title flex items-center gap-2"><Icon name="Settings2" size={20}/> Studio Interactif</h3>
-                                        <div className="grid lg:grid-cols-12 gap-8">
-                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-6 border border-slate-200 flex flex-col items-center shadow-inner overflow-hidden w-full">
-                                                {renderCircle(tracks, steps, 360, true, true)}
-                                                
-                                                <div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-6">
-                                                    <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Tempo</span>
-                                                        <span className="text-[10px] font-bold text-blue-600 mb-1">{bpm}</span>
-                                                        <input type="range" min="40" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full"/>
-                                                    </div>
-                                                    <div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-orange-500">Swing</span>
-                                                        <span className="text-[10px] font-bold text-orange-500 mb-1">{swing}%</span>
-                                                        <input type="range" min="0" max="100" value={swing} onChange={(e) => setSwing(Number(e.target.value))} className="w-full" style={{accentColor: '#f97316'}}/>
-                                                    </div>
-                                                    <div className="col-span-2 sm:col-span-1 bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
-                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3">Divisions</span>
-                                                        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-                                                            {[8, 12, 16, 24].map(s => (<button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); clearAllNotes();}} className={`px-2 py-1 rounded text-[10px] sm:text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="lg:col-span-5 space-y-3">
-                                                <div className="bg-blue-50 text-blue-700 text-[10px] sm:text-xs p-3 sm:p-4 rounded-xl border border-blue-100 font-medium mb-4 sm:mb-6 leading-relaxed">💡 <strong>Astuce :</strong> Cliquez plusieurs fois sur un point pour marquer un <strong>accent fort</strong>.</div>
-                                                {tracks.map((track, idx) => (
-                                                    <div key={idx} className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200">
-                                                        <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full shadow-inner ml-2 shrink-0" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div>
-                                                        <select value={track.id} onChange={(e) => { const nt = [...tracks]; nt[idx].id = e.target.value; setTracks(nt); AudioEngine.playTone(e.target.value); }} className="flex-1 bg-transparent text-[11px] sm:text-[13px] font-bold py-2 outline-none cursor-pointer border-none text-slate-700 w-full min-w-0">
-                                                            {Object.entries(SOUND_LIBRARY).map(([key, lib]) => (<option key={key} value={key}>{lib.name}</option>))}
-                                                        </select>
-                                                        <button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-lg sm:rounded-xl shrink-0" title="Supprimer piste"><Icon name="Trash2" size={16}/></button>
-                                                    </div>
-                                                ))}
-                                                {tracks.length < 8 && (<button type="button" onClick={() => setTracks([...tracks, { id: 'shaker', steps: {}, volume: 1, muted: false }])} className="w-full py-3 sm:py-4 border-2 border-dashed border-slate-300 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 flex justify-center items-center gap-2 mt-4"><Icon name="Plus" size={14}/> Ajouter instrument</button>)}
-                                            </div>
+                                    <div className="pt-8 border-t border-slate-200 text-left text-left text-left text-left">
+                                        <h3 className="text-lg sm:text-xl font-display font-bold text-slate-800 uppercase mb-6 veneer-title flex items-center gap-2 text-left text-left text-left"><Icon name="Settings2" size={20}/> Studio Interactif</h3>
+                                        <div className="grid lg:grid-cols-12 gap-8 text-left text-left text-left">
+                                            <div className="lg:col-span-7 bg-slate-50 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-6 border border-slate-200 flex flex-col items-center shadow-inner overflow-hidden w-full text-left text-left text-left">{renderCircle(tracks, steps, 360, true, true)}<div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-6 text-left text-left text-left text-left"><div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-left text-left text-left text-left"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-center text-left text-left text-left">Tempo</span><span className="text-[10px] font-bold text-blue-600 mb-1 text-left text-left">{bpm}</span><input type="range" min="40" max="200" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full text-left text-left text-left"/></div><div className="bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-left text-left text-left text-left"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-center text-orange-500 text-left text-left text-left">Swing</span><span className="text-[10px] font-bold text-orange-500 mb-1 text-left text-left">{swing}%</span><input type="range" min="0" max="100" value={swing} onChange={(e) => setSwing(Number(e.target.value))} className="w-full text-left text-left text-left" style={{accentColor: '#f97316'}}/></div><div className="col-span-2 sm:col-span-1 bg-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-left text-left text-left text-left"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 sm:mb-3 text-center text-left text-left text-left">Divisions</span><div className="flex gap-1 bg-slate-100 p-1 rounded-lg text-left text-left text-left">{[8, 12, 16, 24].map(s => (<button type="button" key={s} onClick={() => {setIsPlaying(false); setSteps(s); clearAllNotes();}} className={`px-2 py-1 rounded text-[10px] sm:text-[11px] font-bold ${steps===s ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{s}</button>))}</div></div></div></div>
+                                            <div className="lg:col-span-5 space-y-3 text-left text-left text-left text-left text-left text-left text-left"><div className="bg-blue-50 text-blue-700 text-[10px] sm:text-xs p-3 sm:p-4 rounded-xl border border-blue-100 font-medium mb-4 sm:mb-6 leading-relaxed text-left text-left text-left text-left">💡 <strong>Astuce :</strong> Cliquez plusieurs fois sur un point pour marquer un <strong>accent fort</strong>.</div>{tracks.map((track, idx) => (<div key={idx} className="flex items-center gap-2 sm:gap-3 bg-white p-2 sm:p-2.5 rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 text-left text-left text-left text-left"><div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full shadow-inner ml-2 shrink-0" style={{backgroundColor: SOUND_LIBRARY[track.id]?.color}}></div><select value={track.id} onChange={(e) => { const nt = [...tracks]; nt[idx].id = e.target.value; setTracks(nt); AudioEngine.playTone(e.target.value); }} className="flex-1 bg-transparent text-[11px] sm:text-[13px] font-bold py-2 outline-none cursor-pointer border-none text-slate-700 w-full min-w-0 text-left text-left text-left">{Object.entries(SOUND_LIBRARY).map(([key, lib]) => (<option key={key} value={key}>{lib.name}</option>))}</select><button type="button" onClick={() => { const nt = [...tracks]; nt.splice(idx,1); setTracks(nt); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors bg-slate-50 rounded-lg sm:rounded-xl shrink-0 text-left text-left text-left" title="Supprimer piste"><Icon name="Trash2" size={16}/></button></div>))}{tracks.length < 8 && (<button type="button" onClick={() => setTracks([...tracks, { id: 'shaker', steps: {}, volume: 1, muted: false }])} className="w-full py-3 sm:py-4 border-2 border-dashed border-slate-300 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest hover:bg-slate-50 hover:border-blue-400 hover:text-blue-600 flex justify-center items-center gap-2 mt-4 text-left text-left text-left text-left text-left"><Icon name="Plus" size={14}/> Ajouter instrument</button>)}</div>
                                         </div>
                                     </div>
-                                    <div className="space-y-6 pt-8 border-t border-slate-200">
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Instruments recommandés</label><input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
-                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest">Commentaires / Pédagogie</label><textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100" /></div>
+                                    <div className="space-y-6 pt-8 border-t border-slate-200 text-left text-left text-left text-left text-left text-left">
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest text-left text-left text-left text-left text-left">Instruments recommandés</label><input type="text" value={formData.instruments} onChange={e => setFormData({...formData, instruments: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none focus:bg-white focus:ring-2 focus:ring-blue-100 text-left text-left text-left text-left" /></div>
+                                        <div><label className="text-[10px] font-black text-slate-500 uppercase mb-2 block tracking-widest text-left text-left text-left text-left text-left">Commentaires / Pédagogie</label><textarea rows={4} value={formData.note} onChange={e => setFormData({...formData, note: e.target.value})} className="w-full p-4 sm:p-5 bg-slate-50 rounded-[1rem] sm:rounded-[1.5rem] font-medium text-xs sm:text-sm border border-slate-200 outline-none resize-none focus:bg-white focus:ring-2 focus:ring-blue-100 text-left text-left text-left text-left" /></div>
                                     </div>
-                                    <div className="pt-6">
-                                        <button type="submit" disabled={isSaving || !formData.title} className="w-full brand-gradient text-white py-4 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] font-black shadow-xl uppercase text-[13px] sm:text-[15px] tracking-[0.2em] active:scale-[0.98] flex justify-center items-center gap-3 disabled:opacity-50">
-                                            {isSaving ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : <Icon name="Save" size={20}/>} Sauvegarder
-                                        </button>
+                                    <div className="pt-6 flex flex-col sm:flex-row gap-4 text-left text-left text-left text-left text-left text-left">
+                                        {formData.id && (
+                                            <button type="button" onClick={() => handleDeleteClick(formData.id)} className="w-full sm:w-auto px-8 py-6 bg-red-50 text-red-600 rounded-[2rem] font-bold text-xs uppercase tracking-widest hover:bg-red-100 transition-colors flex justify-center items-center gap-2 text-left text-left">
+                                                <Icon name="Trash2" size={18}/> Supprimer
+                                            </button>
+                                        )}
+                                        <button type="submit" disabled={isSaving || !formData.title} className="flex-1 brand-gradient text-white py-4 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] font-black shadow-xl uppercase text-[13px] sm:text-[15px] tracking-[0.2em] active:scale-[0.98] flex justify-center items-center gap-3 disabled:opacity-50 text-left text-left text-left">{isSaving ? <Icon name="RefreshCw" size={20} className="animate-spin" /> : <Icon name="Save" size={20}/>} Sauvegarder</button>
                                     </div>
                                 </form>
                             </div>
@@ -741,68 +722,34 @@
                     )}
 
                     {view === 'print' && (
-                        <div className="bg-white min-h-screen text-slate-900 font-sans p-4 sm:p-8 md:p-16">
-                            {/* Boutons cachés lors de l'impression */}
-                            <div className="no-print flex flex-col sm:flex-row gap-4 mb-8 sm:mb-12 justify-center">
-                                <button onClick={() => setView('list')} className="px-6 py-3 border-2 border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors uppercase tracking-widest text-slate-600">Fermer / Annuler</button>
-                                <button onClick={() => window.print()} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 flex justify-center items-center gap-2"><Icon name="Printer" size={16}/> Imprimer ou Enregistrer en PDF</button>
-                            </div>
-
-                            {/* Page de Titre - Isolée grâce au saut de page */}
-                            <div className="flex flex-col items-center justify-center min-h-[80vh] page-break text-center">
-                                <h1 className="text-6xl sm:text-8xl font-display font-bold uppercase tracking-tight veneer-title mb-6">Carnet de<br/>Rythmes</h1>
-                                <p className="text-xl sm:text-2xl font-bold text-slate-500 tracking-[0.3em] uppercase">Flecha Villefranche</p>
-                            </div>
-                            
-                            {/* Rythmes - 1 par page */}
-                            <div className="space-y-0">
+                        <div className="bg-white min-h-screen text-slate-900 font-sans p-4 sm:p-8 md:p-16 text-left text-left text-left text-left">
+                            <div className="no-print flex flex-col sm:flex-row gap-4 mb-8 sm:mb-12 justify-center no-print text-left text-left"><button onClick={() => setView('list')} className="px-6 py-3 border-2 border-slate-200 rounded-xl font-bold text-xs hover:bg-slate-50 transition-colors uppercase tracking-widest text-slate-600 text-left">Fermer / Annuler</button><button onClick={() => window.print()} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-blue-700 flex justify-center items-center gap-2 no-print text-left"><Icon name="Printer" size={16}/> Imprimer ou Enregistrer en PDF</button></div>
+                            <div className="flex flex-col items-center justify-center min-h-[80vh] page-break text-center text-left text-left text-left text-left"><h1 className="text-6xl sm:text-8xl font-display font-bold uppercase tracking-tight veneer-title mb-6 text-center text-left text-left text-left">Carnet de<br/>Rythmes</h1><p className="text-xl sm:text-2xl font-bold text-slate-500 tracking-[0.3em] uppercase text-center text-left text-left text-left">Flecha Villefranche</p></div>
+                            <div className="space-y-0 text-left text-left text-left text-left text-left">
                                 {catalog.filter(r => selectedRhythms.includes(r.id)).map(r => {
                                     const printTracks = (r.tracks || []).map(t => ({ id: t.id, steps: t.steps }));
-                                    
-                                    // Légende spécifique à CE rythme
                                     const usedIds = new Set(printTracks.map(t => t.id));
                                     const localLegend = Object.entries(SOUND_LIBRARY).filter(([id]) => usedIds.has(id));
 
                                     return (
-                                        <div key={r.id} className="page-break flex flex-col h-full min-h-[90vh] py-8 avoid-break">
-                                            {/* En-tête : Titre et Origine */}
-                                            <div className="text-center mb-8">
-                                                <h3 className="text-4xl sm:text-5xl font-display font-bold uppercase mb-4 veneer-title text-slate-900">{r.title}</h3>
-                                                <div className="flex justify-center items-center gap-3 text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex-wrap">
-                                                    {r.family && <span className="bg-slate-100 px-3 py-1 rounded">{r.family}</span>}
-                                                    {r.origin && <span>• {r.origin}</span>}
-                                                    {/* BPM intentionnellement supprimé ici */}
-                                                </div>
-                                            </div>
-
-                                            {/* Légende intégrée dynamiquement */}
-                                            <div className="mb-10 flex justify-center flex-wrap gap-x-6 gap-y-4 px-4 bg-slate-50 rounded-2xl py-4 border border-slate-200">
+                                        <div key={r.id} className="page-break flex flex-col h-full min-h-[90vh] py-8 avoid-break text-left text-left text-left text-left">
+                                            <div className="text-center mb-8 text-center text-left text-left text-left text-left text-left text-left"><h3 className="text-4xl sm:text-5xl font-display font-bold uppercase mb-4 veneer-title text-slate-900 text-center text-left text-left text-left">{r.title}</h3><div className="flex justify-center items-center gap-3 text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex-wrap text-center text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left">{r.family && <span className="bg-slate-100 px-3 py-1 rounded text-left">{r.family}</span>}{r.origin && <span className="text-left text-left text-left">• {r.origin}</span>}</div></div>
+                                            <div className="mb-10 flex justify-center flex-wrap gap-x-6 gap-y-4 px-4 bg-slate-50 rounded-2xl py-4 border border-slate-200 text-left text-left text-left">
                                                 {localLegend.map(([key, lib]) => (
-                                                    <div key={key} className="flex items-center gap-2">
-                                                        <div className="w-4 h-4 rounded-full border border-slate-300 shadow-sm shrink-0" style={{backgroundColor: lib.color}}></div>
-                                                        <span className="text-[10px] font-bold uppercase text-slate-700">{lib.name}</span>
+                                                    <div key={key} className="flex items-center gap-2 text-left text-left text-left">
+                                                        <div className="w-4 h-4 rounded-full border border-slate-300 shadow-sm shrink-0 text-left" style={{backgroundColor: lib.color}}></div>
+                                                        <span className="text-[10px] font-bold uppercase text-slate-700 text-left">{lib.name}</span>
                                                     </div>
                                                 ))}
-                                                <div className="flex items-center gap-2 border-l border-slate-300 pl-6 ml-2">
-                                                    <div className="w-3 h-3 rounded-full bg-slate-400"></div><span className="text-[10px] font-medium text-slate-500">Normale</span>
+                                                <div className="flex items-center gap-2 border-l border-slate-300 pl-6 ml-2 text-left text-left text-left text-left">
+                                                    <div className="w-3 h-3 rounded-full bg-slate-400 text-left text-left text-left"></div><span className="text-[10px] font-medium text-slate-500 text-left text-left text-left">Normale</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 rounded-full bg-slate-400 ring-2 ring-slate-800"></div><span className="text-[10px] font-medium text-slate-500">Accent</span>
+                                                <div className="flex items-center gap-2 text-left text-left text-left text-left text-left">
+                                                    <div className="w-4 h-4 rounded-full bg-slate-400 ring-2 ring-slate-800 text-left text-left text-left text-left"></div><span className="text-[10px] font-medium text-slate-500 text-left text-left text-left text-left">Accent</span>
                                                 </div>
                                             </div>
-
-                                            {/* Cercle */}
-                                            <div className="flex justify-center mb-8 flex-grow items-center">
-                                                {renderCircle(printTracks, r.totalSteps || 16, 450, false, false)}
-                                            </div>
-
-                                            {/* Instructions / Pédagogie en pied de page */}
-                                            {(r.instruments || r.note) && (
-                                                <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-sm mt-auto">
-                                                    {r.instruments && <p className="mb-4"><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Instruments :</span></strong> {r.instruments}</p>}
-                                                    {r.note && <p><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1">Notes / Pédagogie :</span></strong> <span className="whitespace-pre-wrap leading-relaxed">{r.note}</span></p>}
-                                                </div>
-                                            )}
+                                            <div className="flex justify-center mb-8 flex-grow items-center text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left text-left">{renderCircle(printTracks, r.totalSteps || 16, 450, false, false)}</div>
+                                            {(r.instruments || r.note) && (<div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 text-sm mt-auto text-left text-left text-left">{r.instruments && <p className="mb-4 text-left text-left text-left"><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1 text-left text-left text-left">Instruments :</span></strong> {r.instruments}</p>}{r.note && <p className="text-left text-left text-left text-left"><strong><span className="uppercase text-[10px] tracking-widest text-slate-500 block mb-1 text-left text-left text-left">Notes / Pédagogie :</span></strong> <span className="whitespace-pre-wrap leading-relaxed text-left text-left text-left">{r.note}</span></p>}</div>)}
                                         </div>
                                     );
                                 })}
