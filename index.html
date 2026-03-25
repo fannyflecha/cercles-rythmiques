@@ -725,23 +725,23 @@
                     )}
 
                     {view === 'detail' && currentRhythm && (
-                        <div className="min-h-screen pb-12 animate-in no-print text-center">
-                            <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden">
-                                <div className="p-6 md:p-12 bg-slate-50 border-b border-slate-200 relative">
-                                    <button onClick={goToList} className="absolute top-4 sm:top-6 left-4 sm:left-6 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform"><Icon name="ArrowLeft" size={20}/></button>
-                                    <div className="flex justify-center gap-2 mb-4 mt-6">
-                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{currentRhythm.family}</span>}
-                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{currentRhythm.origin}</span>}
+                        <div className="min-h-screen pb-12 animate-in no-print text-center text-left">
+                            <div className="max-w-5xl mx-auto md:mt-10 bg-white md:rounded-[3rem] shadow-2xl border border-slate-200 overflow-hidden text-center text-left">
+                                <div className="p-6 md:p-12 bg-slate-50 border-b border-slate-200 relative text-center text-left text-center">
+                                    <button onClick={goToList} className="absolute top-4 sm:top-6 left-4 sm:left-6 p-2.5 sm:p-3 bg-white border border-slate-200 rounded-full shadow-sm text-slate-600 hover:scale-105 transition-transform text-left"><Icon name="ArrowLeft" size={20}/></button>
+                                    <div className="flex justify-center gap-2 mb-4 mt-6 text-left text-center">
+                                        {currentRhythm.family && <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-left">{currentRhythm.family}</span>}
+                                        {currentRhythm.origin && <span className="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-left">{currentRhythm.origin}</span>}
                                     </div>
-                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none px-4">{currentRhythm.title}</h2>
-                                    <div className="flex justify-center sm:absolute sm:top-6 sm:right-6 gap-2 mt-6 sm:mt-0">
-                                        <button onClick={() => handleShare(currentRhythm)} className="p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl shadow-sm hover:bg-blue-100 transition-colors" title="Partager par Lien"><Icon name="Share2" size={16}/></button>
-                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors hidden sm:block" title="Copier"><Icon name="Copy" size={16}/></button>
-                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors" title="Modifier"><Icon name="Edit3" size={16}/></button>
-                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors hidden sm:block" title="Supprimer"><Icon name="Trash2" size={16}/></button>
+                                    <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none text-left text-center px-4">{currentRhythm.title}</h2>
+                                    <div className="flex justify-center sm:absolute sm:top-6 sm:right-6 gap-2 mt-6 sm:mt-0 text-left flex-wrap">
+                                        <button onClick={() => handleShare(currentRhythm)} className="p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl shadow-sm hover:bg-blue-100 transition-colors text-left" title="Partager par Lien"><Icon name="Share2" size={16}/></button>
+                                        <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors text-left" title="Copier (Dupliquer)"><Icon name="Copy" size={16}/></button>
+                                        <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors text-left" title="Modifier"><Icon name="Edit3" size={16}/></button>
+                                        <button onClick={() => setShowConfirmDelete(currentRhythm.id)} className="p-3 bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shadow-sm transition-colors text-left" title="Supprimer"><Icon name="Trash2" size={16}/></button>
                                     </div>
                                 </div>
-                                <div className="p-4 md:p-12 flex flex-col items-center bg-white">
+                                <div className="p-4 md:p-12 flex flex-col items-center bg-white text-left">
                                     <div className="w-full max-w-2xl mx-auto flex flex-col items-center bg-slate-50 p-4 sm:p-8 rounded-[2.5rem] shadow-inner border border-slate-100 mb-8">
                                         {renderCircle(tracks, steps, 360, false, true)}
                                         <div className="flex flex-col sm:flex-row gap-4 mt-6 w-full text-left">
