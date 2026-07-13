@@ -86,7 +86,8 @@
                 Volume2: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></>,
                 VolumeX: <><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></>,
                 Settings2: <><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></>,
-                Share2: <><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></>
+                Share2: <><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></>,
+                Star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -123,6 +124,9 @@
             'conga-blem': { name: 'Conga Blem (Étouffé)', color: '#2563eb' }, 
             'conga-open': { name: 'Conga Ton (Ouvert)', color: '#60a5fa' }, 
             'conga-slap': { name: 'Conga Slap (Claqué)', color: '#bfdbfe' }, 
+            'tumba-blem': { name: 'Tumba Blem (Étouffé)', color: '#7c2d12' }, 
+            'tumba-open': { name: 'Tumba Ton (Ouvert)', color: '#ea580c' }, 
+            'tumba-slap': { name: 'Tumba Slap (Claqué)', color: '#fed7aa' }, 
             'agogo-low': { name: 'Agogo Grave', color: '#9333ea' }, 
             'agogo-high': { name: 'Agogo Aigu', color: '#c084fc' }, 
             'cowbell': { name: 'Cowbell', color: '#71717a' }, 
@@ -196,10 +200,13 @@
                     case 'pandeiro-jingle': createNoise('highpass', 3000, 0.15, 0.4); createOsc('square', 6000, now, 0.05, 0.1); break;
                     case 'quinto-slap': createOsc('sine', 750, now, 0.04, 0.7); createOsc('triangle', 1200, now, 0.03, 0.4); createNoise('bandpass', 4500, 0.05, 0.8); break;
                     case 'conga-slap': createOsc('sine', 550, now, 0.05, 0.7); createOsc('triangle', 900, now, 0.03, 0.4); createNoise('bandpass', 3500, 0.06, 0.8); break;
+                    case 'tumba-slap': createOsc('sine', 400, now, 0.05, 0.7); createOsc('triangle', 750, now, 0.04, 0.4); createNoise('bandpass', 2500, 0.06, 0.8); break;
                     case 'quinto-open': createOsc('sine', 260, now, 0.35, 0.7); createOsc('sine', 520, now, 0.08, 0.15); break;
                     case 'quinto-blem': createOsc('sine', 280, now, 0.08, 0.7); break;
                     case 'conga-open': createOsc('sine', 220, now, 0.4, 0.6); break;
                     case 'conga-blem': createOsc('sine', 220, now, 0.1, 0.6); break;
+                    case 'tumba-open': createOsc('sine', 150, now, 0.45, 0.8); createOsc('sine', 300, now, 0.1, 0.15); break;
+                    case 'tumba-blem': createOsc('sine', 160, now, 0.1, 0.8); break;
                     case 'agogo-low': createOsc('triangle', 440, now, 0.4, 0.5); break;
                     case 'agogo-high': createOsc('triangle', 587, now, 0.4, 0.5); break;
                     case 'tambourine': 
@@ -266,6 +273,17 @@
             const [selectedOrigin, setSelectedOrigin] = useState('');
             const [sortBy, setSortBy] = useState('latest');
             
+            // --- FAVORIS ---
+            const [favorites, setFavorites] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('flecha_favorites');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) {
+                    return [];
+                }
+            });
+            const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+            
             const [isPlaying, setIsPlaying] = useState(false);
             const [bpm, setBpm] = useState(100);
             const [swing, setSwing] = useState(0); 
@@ -291,6 +309,12 @@
                 setTracks(prev => prev.map(t => ({ ...t, steps: {} })));
                 setIsPlaying(false);
             }, []);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem('flecha_favorites', JSON.stringify(favorites));
+                } catch (e) {}
+            }, [favorites]);
 
             useEffect(() => {
                 const initAuth = async () => { try { await auth.signInAnonymously(); } catch (e) {} };
@@ -346,16 +370,17 @@
             const uniqueOrigins = useMemo(() => [...new Set(catalog.map(r => r.origin).filter(Boolean))].sort(), [catalog]);
 
             const displayCatalog = useMemo(() => {
-                let result = catalog.filter(r => 
-                    ((r.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || (r.note || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
+                let result = catalog.filter(r => {
+                    if (showFavoritesOnly && !favorites.includes(r.id)) return false;
+                    return ((r.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || (r.note || "").toLowerCase().includes(searchTerm.toLowerCase())) &&
                     (!selectedFamily || r.family === selectedFamily) &&
-                    (!selectedOrigin || r.origin === selectedOrigin)
-                );
+                    (!selectedOrigin || r.origin === selectedOrigin);
+                });
                 if (sortBy === 'alpha') result.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
                 else if (sortBy === 'family') result.sort((a, b) => (a.family || "zzz").localeCompare(b.family || "zzz"));
                 else result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 return result;
-            }, [catalog, searchTerm, selectedFamily, selectedOrigin, sortBy]);
+            }, [catalog, searchTerm, selectedFamily, selectedOrigin, sortBy, showFavoritesOnly, favorites]);
 
             const allDisplayedSelected = displayCatalog.length > 0 && displayCatalog.every(r => selectedRhythms.includes(r.id));
             
@@ -456,6 +481,11 @@
                 }, 100);
                 setToast("🖨️ Astuce : Utilisez Ctrl+P (PC) ou Cmd+P (Mac).");
                 setTimeout(() => setToast(""), 6000);
+            };
+
+            const toggleFavorite = (id, e) => {
+                e.stopPropagation();
+                setFavorites(prev => prev.includes(id) ? prev.filter(fId => fId !== id) : [...prev, id]);
             };
 
             const handleCardClick = (item) => {
@@ -692,6 +722,10 @@
                                 <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-center text-left">
                                     <div className="w-full xl:flex-1 relative text-left"><div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-500"><Icon name="Search" size={20} /></div><input type="text" placeholder="Rechercher..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-14 pr-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-500/20 font-medium transition-all" /></div>
                                     <div className="grid grid-cols-2 md:flex gap-3 sm:gap-4 w-full md:w-auto text-left">
+                                        <button onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} className={`px-3 sm:px-4 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 border ${showFavoritesOnly ? 'bg-amber-400 border-amber-400 text-white shadow-inner' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`} title="Afficher uniquement mes favoris">
+                                            <Icon name="Star" size={16} className={showFavoritesOnly ? "fill-white" : ""} />
+                                            <span className="hidden sm:inline">Favoris</span>
+                                        </button>
                                         <select value={selectedFamily} onChange={e => setSelectedFamily(e.target.value)} className="pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100 truncate"><option value="">Familles</option>{uniqueFamilies.map(t => <option key={t} value={t}>{t}</option>)}</select>
                                         <select value={selectedOrigin} onChange={e => setSelectedOrigin(e.target.value)} className="pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-slate-700 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-100 truncate"><option value="">Origines</option>{uniqueOrigins.map(o => <option key={o} value={o}>{o}</option>)}</select>
                                         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="col-span-2 md:col-span-1 pl-3 pr-8 sm:pl-4 sm:pr-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl bg-slate-50 font-bold text-blue-600 text-[10px] sm:text-[11px] uppercase tracking-widest outline-none border border-slate-200 truncate">
@@ -708,13 +742,18 @@
                                             <div key={r.id} onClick={() => handleCardClick(r)} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border-2 transition-all cursor-pointer flex flex-col h-full card-hover animate-in relative group overflow-hidden ${isSelectionMode && selectedRhythms.includes(r.id) ? 'border-blue-500 bg-blue-50/50 scale-[0.98]' : 'border-transparent hover:border-blue-300'}`}>
                                                 <div className="flex justify-between items-start mb-6">
                                                     <span className="bg-white text-slate-600 shadow-sm border border-slate-200 px-3 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest text-left">{r.family || 'Général'}</span>
-                                                    {isSelectionMode ? (
-                                                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${selectedRhythms.includes(r.id) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 border-slate-300 text-transparent'}`}><Icon name="Check" size={16}/></div>
-                                                    ) : (
-                                                        <button onClick={(e) => togglePreview(r, e)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isThisPreviewPlaying ? 'bg-blue-600 text-white scale-110 shadow-lg' : 'bg-slate-100 text-blue-600 hover:bg-blue-600 hover:text-white'}`}>
-                                                            <Icon name={isThisPreviewPlaying ? "Pause" : "Play"} size={18} className={!isThisPreviewPlaying ? "ml-0.5" : ""} />
+                                                    <div className="flex gap-2 items-center">
+                                                        <button onClick={(e) => toggleFavorite(r.id, e)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${favorites.includes(r.id) ? 'text-amber-400 bg-amber-50' : 'text-slate-300 bg-slate-50 hover:text-amber-400'}`}>
+                                                            <Icon name="Star" size={18} className={favorites.includes(r.id) ? "fill-amber-400" : ""} />
                                                         </button>
-                                                    )}
+                                                        {isSelectionMode ? (
+                                                            <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-colors ${selectedRhythms.includes(r.id) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-slate-100 border-slate-300 text-transparent'}`}><Icon name="Check" size={16}/></div>
+                                                        ) : (
+                                                            <button onClick={(e) => togglePreview(r, e)} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isThisPreviewPlaying ? 'bg-blue-600 text-white scale-110 shadow-lg' : 'bg-slate-100 text-blue-600 hover:bg-blue-600 hover:text-white'}`}>
+                                                                <Icon name={isThisPreviewPlaying ? "Pause" : "Play"} size={18} className={!isThisPreviewPlaying ? "ml-0.5" : ""} />
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <div className="flex justify-center mb-6 bg-slate-50/50 rounded-full p-4 border border-slate-100">{renderMiniCircle(r)}</div>
                                                 <div className="text-center mt-auto text-left text-center"><h3 className="text-2xl font-display font-bold text-slate-800 uppercase veneer-title tracking-tight leading-none text-center">{r.title}</h3>{r.origin && <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2 text-center">{r.origin}</p>}</div>
@@ -737,6 +776,7 @@
                                     </div>
                                     <h2 className="text-4xl md:text-7xl font-display font-bold text-slate-900 uppercase tracking-tight mb-2 veneer-title leading-none text-left text-center px-4">{currentRhythm.title}</h2>
                                     <div className="flex justify-center sm:absolute sm:top-6 sm:right-6 gap-2 mt-6 sm:mt-0 text-left flex-wrap">
+                                        <button onClick={() => toggleFavorite(currentRhythm.id)} className={`p-3 rounded-xl shadow-sm transition-colors text-left border ${favorites.includes(currentRhythm.id) ? 'bg-amber-50 text-amber-500 border-amber-200' : 'bg-white text-slate-400 border-slate-200 hover:text-amber-500 hover:bg-amber-50'}`} title="Favori"><Icon name="Star" size={16} className={favorites.includes(currentRhythm.id) ? "fill-amber-500" : ""}/></button>
                                         <button onClick={() => handleShare(currentRhythm)} className="p-3 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl shadow-sm hover:bg-blue-100 transition-colors text-left" title="Partager par Lien"><Icon name="Share2" size={16}/></button>
                                         <button onClick={() => goToForm(currentRhythm, true)} className="p-3 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-100 transition-colors text-left" title="Copier (Dupliquer)"><Icon name="Copy" size={16}/></button>
                                         <button onClick={() => goToForm(currentRhythm)} className="p-3 bg-white border border-slate-200 text-blue-600 rounded-xl shadow-sm hover:bg-blue-50 transition-colors text-left" title="Modifier"><Icon name="Edit3" size={16}/></button>
