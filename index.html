@@ -239,6 +239,30 @@
                     case 'hihat': createNoise('highpass', 5000, 0.05, 0.3); break;
                     default: createOsc('sine', 440, now, 0.1, 0.5);
                 }
+            },
+            playAlert: () => {
+                if (!AudioEngine.ctx) return;
+                const ctx = AudioEngine.ctx;
+                const now = ctx.currentTime;
+                
+                // Sonnerie d'alerte de fin de timer (Accord cristallin)
+                const createBell = (freq, time) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, time);
+                    gain.gain.setValueAtTime(0, time);
+                    gain.gain.linearRampToValueAtTime(0.6, time + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 2.5);
+                    osc.connect(gain);
+                    gain.connect(AudioEngine.masterGain || ctx.destination);
+                    osc.start(time);
+                    osc.stop(time + 2.5);
+                };
+                
+                createBell(880, now);       // A5
+                createBell(1108.73, now);   // C#6
+                createBell(1318.51, now);   // E6
             }
         };
 
@@ -318,9 +342,38 @@
                 }
             });
 
+            // Etat du Chronomètre
+            const [timerState, setTimerState] = useState({ itemId: null, remaining: 0, isRunning: false });
+
             const nextNoteTimeRef = useRef(0);
             const currentStepRef = useRef(0);
             const timerIDRef = useRef(null);
+
+            // Logique du chronomètre
+            useEffect(() => {
+                let interval;
+                if (timerState.isRunning && timerState.remaining > 0) {
+                    interval = window.setInterval(() => {
+                        setTimerState(prev => ({ ...prev, remaining: prev.remaining - 1 }));
+                    }, 1000);
+                } else if (timerState.isRunning && timerState.remaining === 0) {
+                    AudioEngine.init();
+                    AudioEngine.playAlert();
+                    setTimerState(prev => ({ ...prev, isRunning: false, itemId: null }));
+                }
+                return () => window.clearInterval(interval);
+            }, [timerState.isRunning, timerState.remaining]);
+
+            const toggleTimer = (item) => {
+                AudioEngine.init(); // Débloque l'audio context sur mobile
+                setTimerState(prev => {
+                    if (prev.itemId === item.id) {
+                        return { ...prev, isRunning: !prev.isRunning };
+                    } else {
+                        return { itemId: item.id, remaining: (item.duration || 1) * 60, isRunning: true };
+                    }
+                });
+            };
 
             // Sauvegarde automatique de la séance
             useEffect(() => {
@@ -884,6 +937,13 @@
                                                             <Icon name={item.isDone ? 'CheckCircle' : 'Circle'} size={32} className={item.isDone ? 'text-green-500' : 'text-slate-300 hover:text-blue-400'} />
                                                         </button>
                                                         
+                                                        {/* Miniature du rythme */}
+                                                        {rhythmObj && (
+                                                            <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 bg-slate-50 rounded-full border border-slate-200 flex items-center justify-center p-1 pointer-events-none mt-1 shadow-inner">
+                                                                {renderMiniCircle(rhythmObj)}
+                                                            </div>
+                                                        )}
+                                                        
                                                         <div className="flex-1 min-w-0">
                                                             {/* Titre et Play */}
                                                             <div className="flex justify-between items-start mb-3 gap-2">
@@ -901,11 +961,27 @@
                                                             </div>
 
                                                             {/* Inputs : Temps et Notes */}
-                                                            <div className="flex flex-col sm:flex-row gap-3 mb-3">
-                                                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 w-full sm:w-auto shrink-0">
+                                                            <div className="flex flex-col lg:flex-row gap-3 mb-3">
+                                                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 w-full lg:w-auto shrink-0">
                                                                     <Icon name="Clock" size={16} className="text-slate-400" />
-                                                                    <input type="number" min="1" max="120" value={item.duration} onChange={(e) => updateSessionItem(item.id, 'duration', e.target.value)} className="w-12 bg-transparent text-center font-bold text-slate-700 outline-none" disabled={item.isDone} />
-                                                                    <span className="text-[10px] font-black uppercase text-slate-500">min</span>
+                                                                    <input type="number" min="1" max="120" value={item.duration} onChange={(e) => updateSessionItem(item.id, 'duration', e.target.value)} className="w-10 bg-transparent text-center font-bold text-slate-700 outline-none" disabled={item.isDone || (timerState.itemId === item.id && timerState.isRunning)} />
+                                                                    <span className="text-[10px] font-black uppercase text-slate-500 mr-1">min</span>
+                                                                    
+                                                                    {/* Contrôle Chronomètre */}
+                                                                    <div className="pl-2 border-l border-slate-200 flex items-center gap-2">
+                                                                        <button 
+                                                                            onClick={() => toggleTimer(item)} 
+                                                                            disabled={item.isDone}
+                                                                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${timerState.itemId === item.id && timerState.isRunning ? 'bg-red-500 text-white shadow-md' : 'bg-blue-100 text-blue-600 hover:bg-blue-200 disabled:opacity-50'}`}
+                                                                        >
+                                                                            <Icon name={timerState.itemId === item.id && timerState.isRunning ? 'Pause' : 'Play'} size={14} className={!(timerState.itemId === item.id && timerState.isRunning) ? 'ml-0.5' : ''} />
+                                                                        </button>
+                                                                        {timerState.itemId === item.id && (
+                                                                            <span className="font-mono font-bold text-sm text-slate-700 w-10 text-center">
+                                                                                {Math.floor(timerState.remaining / 60)}:{(timerState.remaining % 60).toString().padStart(2, '0')}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                                 <input type="text" placeholder="Notes (ex: Travailler le slap...)" value={item.notes} onChange={(e) => updateSessionItem(item.id, 'notes', e.target.value)} className="flex-1 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-blue-300 focus:bg-white transition-colors" disabled={item.isDone} />
                                                             </div>
