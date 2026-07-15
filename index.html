@@ -266,7 +266,7 @@
             }
         };
 
-        const renderMiniCircle = (item) => {
+        const renderMiniCircle = (item, customSizeClass = "max-w-[110px]") => {
             const size = 110; const center = size / 2;
             const rTracks = item.tracks || []; const nTracks = rTracks.length;
             const tSteps = item.totalSteps || 16;
@@ -274,7 +274,7 @@
             const spacing = nTracks > 1 ? (maxR - minR) / (nTracks - 1) : 0;
             return (
                 <div className="w-full flex justify-center">
-                    <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[110px] h-auto bg-white rounded-full border border-slate-300 shadow-inner">
+                    <svg viewBox={`0 0 ${size} ${size}`} className={`w-full h-auto bg-white rounded-full border border-slate-300 shadow-inner ${customSizeClass}`}>
                         <line x1={center} y1={10} x2={center} y2={size-10} className="stroke-slate-400" strokeWidth="2" />
                         <line x1={10} y1={center} x2={size-10} y2={center} className="stroke-slate-400" strokeWidth="2" />
                         {rTracks.map((track, idx) => {
@@ -930,60 +930,78 @@
                                             const isThisPreviewPlaying = previewId === item.rhythmId && isPlaying;
 
                                             return (
-                                                <div key={item.id} className={`p-4 sm:p-5 rounded-2xl sm:rounded-[2rem] border-2 transition-all ${item.isDone ? 'bg-slate-100 border-slate-200 opacity-60' : 'bg-white border-blue-100 shadow-sm'}`}>
-                                                    <div className="flex gap-3 sm:gap-4 items-start">
-                                                        {/* Bouton Check */}
-                                                        <button onClick={() => updateSessionItem(item.id, 'isDone', !item.isDone)} className="mt-1 shrink-0 transition-transform active:scale-90">
-                                                            <Icon name={item.isDone ? 'CheckCircle' : 'Circle'} size={32} className={item.isDone ? 'text-green-500' : 'text-slate-300 hover:text-blue-400'} />
-                                                        </button>
+                                                <div key={item.id} className={`p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border-2 transition-all shadow-sm ${item.isDone ? 'bg-slate-100 border-slate-200 opacity-60' : 'bg-white border-blue-100'}`}>
+                                                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
                                                         
-                                                        {/* Miniature du rythme */}
+                                                        {/* Header Mobile: Check + Titre + Play */}
+                                                        <div className="flex items-center gap-3 w-full sm:hidden">
+                                                            <button onClick={() => updateSessionItem(item.id, 'isDone', !item.isDone)} className="shrink-0 transition-transform active:scale-90">
+                                                                <Icon name={item.isDone ? 'CheckCircle' : 'Circle'} size={32} className={item.isDone ? 'text-green-500' : 'text-slate-300 hover:text-blue-400'} />
+                                                            </button>
+                                                            <div className="flex-1 min-w-0">
+                                                                <h4 className={`text-xl font-display font-bold uppercase veneer-title leading-tight truncate ${item.isDone ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+                                                                    {rhythmObj ? rhythmObj.title : 'Rythme supprimé'}
+                                                                </h4>
+                                                                {rhythmObj && <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{rhythmObj.family}</div>}
+                                                            </div>
+                                                            {rhythmObj && (
+                                                                <button onClick={(e) => togglePreview(rhythmObj, e)} className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all shadow-sm ${isThisPreviewPlaying ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
+                                                                    <Icon name={isThisPreviewPlaying ? "Pause" : "Play"} size={16} className={!isThisPreviewPlaying ? "ml-0.5" : ""} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Check (Desktop) */}
+                                                        <button onClick={() => updateSessionItem(item.id, 'isDone', !item.isDone)} className="hidden sm:block shrink-0 transition-transform active:scale-90 mt-3">
+                                                            <Icon name={item.isDone ? 'CheckCircle' : 'Circle'} size={36} className={item.isDone ? 'text-green-500' : 'text-slate-300 hover:text-blue-400'} />
+                                                        </button>
+
+                                                        {/* Miniature du rythme EN GRAND */}
                                                         {rhythmObj && (
-                                                            <div className="w-12 h-12 sm:w-16 sm:h-16 shrink-0 bg-slate-50 rounded-full border border-slate-200 flex items-center justify-center p-1 pointer-events-none mt-1 shadow-inner">
-                                                                {renderMiniCircle(rhythmObj)}
+                                                            <div className="w-32 h-32 sm:w-36 sm:h-36 shrink-0 flex items-center justify-center pointer-events-none mt-2 sm:mt-0">
+                                                                {renderMiniCircle(rhythmObj, "w-full h-full max-w-full shadow-md border-2 border-slate-200")}
                                                             </div>
                                                         )}
                                                         
-                                                        <div className="flex-1 min-w-0">
-                                                            {/* Titre et Play */}
-                                                            <div className="flex justify-between items-start mb-3 gap-2">
+                                                        {/* Contenu Droite */}
+                                                        <div className="flex-1 min-w-0 w-full mt-2 sm:mt-0">
+                                                            
+                                                            {/* Titre et Play (Desktop) */}
+                                                            <div className="hidden sm:flex justify-between items-start mb-5 gap-2">
                                                                 <div>
-                                                                    <h4 className={`text-xl font-display font-bold uppercase veneer-title leading-tight truncate ${item.isDone ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
+                                                                    <h4 className={`text-2xl font-display font-bold uppercase veneer-title leading-tight truncate ${item.isDone ? 'text-slate-500 line-through' : 'text-slate-800'}`}>
                                                                         {rhythmObj ? rhythmObj.title : 'Rythme supprimé'}
                                                                     </h4>
-                                                                    {rhythmObj && <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{rhythmObj.family}</div>}
+                                                                    {rhythmObj && <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{rhythmObj.family}</div>}
                                                                 </div>
                                                                 {rhythmObj && (
-                                                                    <button onClick={(e) => togglePreview(rhythmObj, e)} className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all ${isThisPreviewPlaying ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
-                                                                        <Icon name={isThisPreviewPlaying ? "Pause" : "Play"} size={18} className={!isThisPreviewPlaying ? "ml-0.5" : ""} />
+                                                                    <button onClick={(e) => togglePreview(rhythmObj, e)} className={`w-12 h-12 shrink-0 rounded-full flex items-center justify-center transition-all shadow-sm ${isThisPreviewPlaying ? 'bg-blue-600 text-white shadow-md' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}>
+                                                                        <Icon name={isThisPreviewPlaying ? "Pause" : "Play"} size={20} className={!isThisPreviewPlaying ? "ml-0.5" : ""} />
                                                                     </button>
                                                                 )}
                                                             </div>
 
-                                                            {/* Inputs : Temps et Notes */}
+                                                            {/* Inputs : Temps, Chrono et Notes */}
                                                             <div className="flex flex-col lg:flex-row gap-3 mb-3">
-                                                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 w-full lg:w-auto shrink-0">
-                                                                    <Icon name="Clock" size={16} className="text-slate-400" />
-                                                                    <input type="number" min="1" max="120" value={item.duration} onChange={(e) => updateSessionItem(item.id, 'duration', e.target.value)} className="w-10 bg-transparent text-center font-bold text-slate-700 outline-none" disabled={item.isDone || (timerState.itemId === item.id && timerState.isRunning)} />
-                                                                    <span className="text-[10px] font-black uppercase text-slate-500 mr-1">min</span>
-                                                                    
-                                                                    {/* Contrôle Chronomètre */}
-                                                                    <div className="pl-2 border-l border-slate-200 flex items-center gap-2">
-                                                                        <button 
-                                                                            onClick={() => toggleTimer(item)} 
-                                                                            disabled={item.isDone}
-                                                                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${timerState.itemId === item.id && timerState.isRunning ? 'bg-red-500 text-white shadow-md' : 'bg-blue-100 text-blue-600 hover:bg-blue-200 disabled:opacity-50'}`}
-                                                                        >
-                                                                            <Icon name={timerState.itemId === item.id && timerState.isRunning ? 'Pause' : 'Play'} size={14} className={!(timerState.itemId === item.id && timerState.isRunning) ? 'ml-0.5' : ''} />
-                                                                        </button>
-                                                                        {timerState.itemId === item.id && (
-                                                                            <span className="font-mono font-bold text-sm text-slate-700 w-10 text-center">
-                                                                                {Math.floor(timerState.remaining / 60)}:{(timerState.remaining % 60).toString().padStart(2, '0')}
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
+                                                                {/* Bloc Chronomètre */}
+                                                                <div className="flex items-center bg-slate-50 rounded-xl border border-slate-200 p-1 shrink-0">
+                                                                    {timerState.itemId === item.id && timerState.isRunning ? (
+                                                                        <div className="px-4 py-1.5 font-mono font-bold text-lg text-blue-600 w-24 text-center">
+                                                                            {Math.floor(timerState.remaining / 60)}:{(timerState.remaining % 60).toString().padStart(2, '0')}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center px-3 py-1.5">
+                                                                            <input type="number" min="1" max="60" value={item.duration || ''} onChange={(e) => updateSessionItem(item.id, 'duration', parseInt(e.target.value) || 0)} className="w-12 text-center bg-transparent font-bold text-slate-700 outline-none text-lg" disabled={item.isDone} />
+                                                                            <span className="text-xs font-bold text-slate-400 uppercase ml-1">min</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <button onClick={() => toggleTimer(item)} disabled={item.isDone} className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all disabled:opacity-50 ${timerState.itemId === item.id && timerState.isRunning ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-blue-100 text-blue-600 hover:bg-blue-200'}`}>
+                                                                        <Icon name={timerState.itemId === item.id && timerState.isRunning ? 'Pause' : 'Play'} size={18} className={!(timerState.itemId === item.id && timerState.isRunning) ? "ml-0.5" : ""} />
+                                                                    </button>
                                                                 </div>
-                                                                <input type="text" placeholder="Notes (ex: Travailler le slap...)" value={item.notes} onChange={(e) => updateSessionItem(item.id, 'notes', e.target.value)} className="flex-1 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-blue-300 focus:bg-white transition-colors" disabled={item.isDone} />
+                                                                
+                                                                {/* Notes de séance */}
+                                                                <input type="text" placeholder="Notes (ex: Focus main gauche...)" value={item.notes} onChange={(e) => updateSessionItem(item.id, 'notes', e.target.value)} className="flex-1 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 text-sm font-medium outline-none focus:border-blue-300 focus:bg-white transition-colors min-w-[200px]" disabled={item.isDone} />
                                                             </div>
 
                                                             {/* Contrôles de l'item (Ordre / Supprimer) */}
